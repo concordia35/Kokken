@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 80" role="img" aria-label="Tre kædeled">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#f2d486"/>
+      <stop offset=".45" stop-color="#c99838"/>
+      <stop offset="1" stop-color="#f7e5a6"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#g)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="20" y="23" width="72" height="34" rx="17" transform="rotate(-22 56 40)"/>
+    <rect x="84" y="23" width="72" height="34" rx="17"/>
+    <rect x="148" y="23" width="72" height="34" rx="17" transform="rotate(22 184 40)"/>
+  </g>
+  <g fill="none" stroke="#7a1020" stroke-width="6" stroke-linecap="round" opacity=".9">
+    <path d="M70 38h45"/>
+    <path d="M126 38h45"/>
+  </g>
+</svg>
