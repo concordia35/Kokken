@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="da">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+  <meta name="theme-color" content="#78101d" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Restauratør" />
+  <title>Restauratør · Concordia</title>
+  <link rel="manifest" href="manifest.webmanifest?v=2.1.1" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png?v=2.1.1" />
+  <link rel="stylesheet" href="style.css?v=2.1.1" />
+</head>
+<body>
+  <div id="loadingScreen" class="loading-screen" role="status" aria-live="polite">
+    <div class="loading-card">
+      <img src="assets/chainlinks.jpg" alt="" class="loading-chain" />
+      <div class="loading-title">Restauratør</div>
+      <div class="loading-text">Henter tilmeldinger...</div>
+      <div class="loading-spinner" aria-hidden="true"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <div class="app-shell">
+    <header class="app-header">
+      <img class="chainmark-img" src="assets/chainlinks.jpg" alt="Tre kædeled" />
+      <p class="eyebrow">Broderloge nr. 35 Concordia</p>
+      <h1>Restauratør</h1>
+      <p class="subtitle">Madtilmelding, rettelser og køkkenoverblik.</p>
+      <div class="header-actions">
+        <button id="refreshBtn" class="btn soft" type="button">Opdater</button>
+        <button id="installBtn" class="btn ghost" type="button" hidden>Installer</button>
+      </div>
+      <p id="syncStatus" class="sync-status">Henter fra Google Sheet…</p>
+    </header>
+
+    <main id="viewDashboard" class="view active-view">
+      <section class="hero-block">
+        <div class="section-title"><span></span><h2>Næste logeaften</h2></div>
+        <div id="nextEventHero"></div>
+      </section>
+
+      <section id="changesBlock" class="changes-block" hidden>
+        <div class="section-title"><span></span><h2>Ændringer siden sidst</h2></div>
+        <div id="changesList" class="changes-list"></div>
+      </section>
+
+      <section class="list-block">
+        <div class="list-head">
+          <div class="section-title"><span></span><h2>Kommende aftener</h2></div>
+        </div>
+        <div id="eventCards" class="event-list"></div>
+      </section>
+    </main>
+
+    <main id="viewNext" class="view">
+      <section id="nextDetail" class="detail-area"></section>
+    </main>
+
+    <main id="viewEdit" class="view">
+      <section class="page-card control-card">
+        <div class="section-title"><span></span><h2>Ret tilmeldinger</h2></div>
+        <label class="field-label">Logeaften
+          <select id="eventSelect"></select>
+        </label>
+        <label class="field-label">Søg broder
+          <input id="memberSearch" type="search" placeholder="Skriv navn..." autocomplete="off" />
+        </label>
+      </section>
+      <section id="editSummary" class="detail-area"></section>
+      <section class="list-block">
+        <div class="section-title"><span></span><h2>Brødre</h2></div>
+        <div id="memberList" class="member-list"></div>
+      </section>
+    </main>
+
+    <main id="viewArchive" class="view">
+      <section class="list-block">
+        <div class="section-title"><span></span><h2>Arkiv</h2></div>
+        <p class="help-text">Tidligere logeaftener vises her, så madtal og noter kan slås op bagefter.</p>
+        <div id="archiveList" class="event-list archive-list"></div>
+      </section>
+    </main>
+
+    <main id="viewAbout" class="view">
+      <section class="page-card about-card">
+        <div class="section-title"><span></span><h2>Om appen</h2></div>
+        <p>Denne app er lavet til restauratøren og madansvarlig i Broderloge nr. 35 Concordia.</p>
+
+        <div class="about-box">
+          <h3>Formål</h3>
+          <p>Appen giver et hurtigt køkkenoverblik over logeaftener: kuverter, brødre til mad, gæster, deltagere uden mad og brødre der endnu ikke har svaret.</p>
+        </div>
+
+        <div class="about-box">
+          <h3>Sådan bruges den</h3>
+          <p><strong>Overblik</strong> viser kommende aftener og madtal. <strong>Næste</strong> viser køkkenlisten. <strong>Ret</strong> bruges til at ændre tilmeldinger. <strong>Arkiv</strong> viser tidligere aftener.</p>
+        </div>
+
+        <div class="about-box">
+          <h3>Data og rettelser</h3>
+          <p>Appen bruger samme Google Sheet og Apps Script som brødrenes tilmeldingsside. Når en tilmelding rettes, gemmes rettelsen som en ny række. Appen viser altid den nyeste tilmelding pr. broder og logeaften.</p>
+        </div>
+
+        <div class="about-box warning-box">
+          <h3>Deling</h3>
+          <p>Linket bør kun deles med restauratøren og Lars, da appen kan ændre tilmeldinger.</p>
+        </div>
+
+        <p class="about-note">Køkkenbeskeden kan kopieres og sendes videre, og overblikket kan printes direkte fra browseren.</p>
+        <p class="app-version">Version <span id="appVersion">2.1.1</span></p>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Navigation">
+      <button class="nav-btn active" data-view="dashboard"><span>▦</span><small>Overblik</small></button>
+      <button class="nav-btn" data-view="next"><span>🍽️</span><small>Næste</small></button>
+      <button class="nav-btn" data-view="edit"><span>✎</span><small>Ret</small></button>
+      <button class="nav-btn" data-view="archive"><span>◷</span><small>Arkiv</small></button>
+      <button class="nav-btn" data-view="about"><span>ⓘ</span><small>Om</small></button>
+    </nav>
+  </div>
+
+  <dialog id="eventDialog" class="sheet-dialog">
+    <div class="sheet">
+      <button id="closeEventDialog" class="close" type="button" aria-label="Luk">×</button>
+      <div id="eventDialogContent" class="sheet-scroll"></div>
+    </div>
+  </dialog>
+
+  <dialog id="editDialog" class="sheet-dialog">
+    <div class="sheet edit-sheet">
+      <button id="closeEditDialog" class="close" type="button" aria-label="Luk">×</button>
+      <div class="sheet-scroll">
+        <p id="editEventLabel" class="modal-sub"></p>
+        <h2 id="editName" class="modal-title"></h2>
+        <p id="editCurrentStatus" class="description compact"></p>
+
+        <div class="choice-block">
+          <h3>Deltagelse</h3>
+          <div class="choice-row">
+            <button type="button" data-edit-attending="yes" class="choice-btn">Deltager</button>
+            <button type="button" data-edit-attending="no" class="choice-btn">Deltager ikke</button>
+          </div>
+        </div>
+
+        <div class="choice-block" id="editMealBlock">
+          <h3>Mad</h3>
+          <div class="choice-row">
+            <button type="button" data-edit-meal="yes" class="choice-btn">Spiser med</button>
+            <button type="button" data-edit-meal="no" class="choice-btn">Spiser ikke med</button>
+          </div>
+        </div>
+
+        <div class="choice-block">
+          <h3>Gæst</h3>
+          <label class="checkline"><input id="editGuest" type="checkbox" /> Har gæst med</label>
+          <div id="editGuestDetails" class="guest-details" hidden>
+            <label class="field-label">Gæstens navn
+              <input id="editGuestName" type="text" placeholder="Navn på gæst" />
+            </label>
+            <label class="checkline"><input id="editGuestMeal" type="checkbox" /> Gæsten spiser med</label>
+          </div>
+        </div>
+
+        <label class="field-label">Bemærkning
+          <textarea id="editNote" rows="4" placeholder="F.eks. allergi, kommer senere, kun kaffe..."></textarea>
+        </label>
+
+        <div class="modal-actions sticky-actions">
+          <button id="saveEditBtn" class="btn primary wide-btn" type="button">Gem rettelse</button>
+        </div>
+        <p id="editSaveStatus" class="save-status" aria-live="polite"></p>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="app.js?v=2.1.1"></script>
+</body>
+</html>
