@@ -7,9 +7,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Restauratør" />
   <title>Restauratør · Concordia</title>
-  <link rel="manifest" href="manifest.webmanifest?v=2.1.1" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png?v=2.1.1" />
-  <link rel="stylesheet" href="style.css?v=2.1.1" />
+  <link rel="manifest" href="manifest.webmanifest?v=2.2.1" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png?v=2.2.1" />
+  <link rel="stylesheet" href="style.css?v=2.2.1" />
 </head>
 <body>
   <div id="loadingScreen" class="loading-screen" role="status" aria-live="polite">
@@ -24,6 +24,7 @@
   <div id="toast" class="toast" hidden></div>
 
   <div class="app-shell">
+    <aside class="app-sidebar">
     <header class="app-header">
       <img class="chainmark-img" src="assets/chainlinks.jpg" alt="Tre kædeled" />
       <p class="eyebrow">Broderloge nr. 35 Concordia</p>
@@ -35,6 +36,15 @@
       </div>
       <p id="syncStatus" class="sync-status">Henter fra Google Sheet…</p>
     </header>
+
+    <nav class="bottom-nav" aria-label="Navigation">
+      <button class="nav-btn active" data-view="dashboard"><span>▦</span><small>Overblik</small></button>
+      <button class="nav-btn" data-view="next"><span>🍽️</span><small>Næste</small></button>
+      <button class="nav-btn" data-view="edit"><span>✎</span><small>Ret</small></button>
+      <button class="nav-btn" data-view="archive"><span>◷</span><small>Arkiv</small></button>
+      <button class="nav-btn" data-view="about"><span>ⓘ</span><small>Om</small></button>
+    </nav>
+    </aside>
 
     <main id="viewDashboard" class="view active-view">
       <section class="hero-block">
@@ -110,17 +120,10 @@
         </div>
 
         <p class="about-note">Køkkenbeskeden kan kopieres og sendes videre, og overblikket kan printes direkte fra browseren.</p>
-        <p class="app-version">Version <span id="appVersion">2.1.1</span></p>
+        <p class="app-version">Version <span id="appVersion">2.2.1</span></p>
       </section>
     </main>
 
-    <nav class="bottom-nav" aria-label="Navigation">
-      <button class="nav-btn active" data-view="dashboard"><span>▦</span><small>Overblik</small></button>
-      <button class="nav-btn" data-view="next"><span>🍽️</span><small>Næste</small></button>
-      <button class="nav-btn" data-view="edit"><span>✎</span><small>Ret</small></button>
-      <button class="nav-btn" data-view="archive"><span>◷</span><small>Arkiv</small></button>
-      <button class="nav-btn" data-view="about"><span>ⓘ</span><small>Om</small></button>
-    </nav>
   </div>
 
   <dialog id="eventDialog" class="sheet-dialog">
@@ -177,6 +180,6 @@
     </div>
   </dialog>
 
-  <script src="app.js?v=2.1.1"></script>
+  <script src="app.js?v=2.2.1"></script>
 </body>
 </html>

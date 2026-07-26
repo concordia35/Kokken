@@ -1,5 +1,5 @@
 Restauratør · Concordia
-Version 2.1.1
+Version 2.2.1
 
 Separat app til restauratøren/madansvarlig.
 
@@ -28,3 +28,19 @@ Version 2.1.0:
 Version 2.1.1:
 - Om-sektionen er rettet, så teksten har korrekt luft og ikke rammer kanten af kortet.
 - Om-teksten er delt op i mindre bokse, så den passer bedre på mobil.
+
+
+Version 2.2.0:
+- Nyt responsivt desktop-layout, så løsningen fungerer som en rigtig webside på computer.
+- Fast venstremenu med større arbejdsområde på brede skærme.
+- Overblik viser næste logeaften og kommende aftener side om side.
+- Ret tilmeldinger viser filtre og opsummering ved siden af en større broderliste.
+- Køkkenoverblik og arkiv udnytter flere kolonner på store skærme.
+- Mobilvisningen og PWA-installation er bevaret.
+
+Version 2.2.1:
+- Datahentning og gemning får timeout, så appen ikke kan hænge på indlæsningsskærmen.
+- Senest hentede data vises ved midlertidige netværksfejl.
+- PWA-cachen er versionsopdateret og matcher de versionsmærkede filer.
+- Navigation fra overbliksdialogen til rettelser lukker dialogen korrekt.
+- Tablet-, desktop- og printlayout er justeret mod overlap og vandret scroll.

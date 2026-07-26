@@ -1,6 +1,7 @@
-const CACHE_NAME = 'concordia-restaurator-v2-1-1';
+const CACHE_PREFIX = 'concordia-restaurator-';
+const CACHE_NAME = `${CACHE_PREFIX}v2-2-1`;
 const ASSETS = [
-  './', './index.html', './style.css', './app.js', './manifest.webmanifest',
+  './', './index.html', './style.css?v=2.2.1', './app.js?v=2.2.1', './manifest.webmanifest?v=2.2.1',
   './assets/chainlinks.jpg', './assets/chainlinks.svg', './icons/icon-192.png', './icons/icon-512.png'
 ];
 
@@ -9,13 +10,41 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))).then(() => self.clients.claim()));
+  event.waitUntil(
+    caches.keys()
+      .then(keys => Promise.all(keys.filter(key => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME).map(key => caches.delete(key))))
+      .then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', event => {
   const req = event.request;
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
-  if (url.hostname.includes('script.google.com')) return;
-  event.respondWith(caches.match(req).then(cached => cached || fetch(req)));
+  if (url.origin !== self.location.origin) return;
+
+  if (req.mode === 'navigate') {
+    event.respondWith(
+      fetch(req)
+        .then(response => {
+          if (response.ok) {
+            const copy = response.clone();
+            event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put('./index.html', copy)));
+          }
+          return response;
+        })
+        .catch(() => caches.match('./index.html').then(cached => cached || caches.match('./')))
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(req).then(cached => cached || fetch(req).then(response => {
+      if (response.ok) {
+        const copy = response.clone();
+        event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.put(req, copy)));
+      }
+      return response;
+    }))
+  );
 });

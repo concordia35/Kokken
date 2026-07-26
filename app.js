@@ -1,6 +1,8 @@
-const APP_VERSION = '2.1.0';
+const APP_VERSION = '2.2.1';
 const CONFIG = {
-  GOOGLE_APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw5kZ4Yjgge_sKnxhSjjVLkb8cI-hG0E_qcScyxP7820a7lzfCr42HhZDp3lW2kmNsy/exec'
+  GOOGLE_APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw5kZ4Yjgge_sKnxhSjjVLkb8cI-hG0E_qcScyxP7820a7lzfCr42HhZDp3lW2kmNsy/exec',
+  LOAD_TIMEOUT_MS: 15000,
+  SAVE_TIMEOUT_MS: 20000
 };
 
 const $ = selector => document.querySelector(selector);
@@ -59,7 +61,16 @@ const storage = {
     catch { return null; }
   },
   setSnapshot(snapshot){
-    localStorage.setItem('concordia_restaurator_snapshot_v2', JSON.stringify(snapshot));
+    try { localStorage.setItem('concordia_restaurator_snapshot_v2', JSON.stringify(snapshot)); }
+    catch (err) { console.warn('Kunne ikke gemme ændringsoversigten lokalt', err); }
+  },
+  getData(){
+    try { return JSON.parse(localStorage.getItem('concordia_restaurator_data_v2') || 'null'); }
+    catch { return null; }
+  },
+  setData(data){
+    try { localStorage.setItem('concordia_restaurator_data_v2', JSON.stringify(data)); }
+    catch (err) { console.warn('Kunne ikke gemme data lokalt', err); }
   }
 };
 
@@ -118,11 +129,11 @@ async function loadData(force=false){
   try {
     setStatus(force ? 'Opdaterer fra Google Sheet…' : 'Henter fra Google Sheet…');
     const url = `${CONFIG.GOOGLE_APPS_SCRIPT_URL}?action=list&t=${Date.now()}`;
-    const res = await fetch(url, { cache:'no-store' });
+    const res = await fetchWithTimeout(url, { cache:'no-store' }, CONFIG.LOAD_TIMEOUT_MS);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
 
-    state.members = normalizeMembers(data.members);
+    state.members = normalizeMembers(data.members || []);
     state.events = normalizeEvents(data.events || []);
     state.rows = normalizeRows(data.rows || data.signups || []);
     state.latest = getLatestRows(state.rows);
@@ -130,14 +141,41 @@ async function loadData(force=false){
 
     state.changes = findChanges(storage.getSnapshot(), buildSnapshot());
     storage.setSnapshot(buildSnapshot());
+    storage.setData({
+      savedAt: new Date().toISOString(),
+      members: state.members,
+      events: state.events,
+      rows: state.rows
+    });
 
     renderAll();
     setStatus(`Koblet på Google Sheet · ${timeFmt.format(new Date())}`);
     if (force) showToast('Data er opdateret.');
   } catch (err) {
     console.warn('Kunne ikke hente data', err);
-    setStatus('Kunne ikke hente fra Google Sheet.', true);
-    showToast('Kunne ikke hente data fra Google Sheet.');
+    const cached = storage.getData();
+    if (cached && Array.isArray(cached.events) && Array.isArray(cached.members) && Array.isArray(cached.rows)) {
+      state.members = cached.members;
+      state.events = cached.events;
+      state.rows = cached.rows;
+      state.latest = getLatestRows(state.rows);
+      if (!eventById(state.selectedEventId)) state.selectedEventId = getUpcomingEvents()[0]?.id || state.events[0]?.id || '';
+      state.changes = [];
+      renderAll();
+      const saved = formatCachedAt(cached.savedAt);
+      setStatus(`Offline · viser senest gemte data${saved ? ` fra ${saved}` : ''}`, true);
+      showToast('Google Sheet kunne ikke nås. Viser senest gemte data.');
+    } else {
+      state.members = [];
+      state.events = [];
+      state.rows = [];
+      state.latest = {};
+      state.selectedEventId = '';
+      state.changes = [];
+      renderAll();
+      setStatus(err?.name === 'AbortError' ? 'Google Sheet svarede ikke i tide.' : 'Kunne ikke hente fra Google Sheet.', true);
+      showToast('Kunne ikke hente data fra Google Sheet.');
+    }
   } finally {
     hideLoading();
   }
@@ -376,6 +414,7 @@ function bindDynamicActions(){
   $$('[data-go-edit]').forEach(el => el.onclick = event => {
     event.stopPropagation();
     state.selectedEventId = el.dataset.goEdit;
+    if (els.eventDialog.open) els.eventDialog.close();
     showView('edit');
     renderEditEventSelect();
     renderEditView();
@@ -508,11 +547,12 @@ async function saveEdit(){
   try {
     els.editSaveStatus.textContent = 'Gemmer rettelse…';
     els.saveEdit.disabled = true;
-    const res = await fetch(CONFIG.GOOGLE_APPS_SCRIPT_URL, {
+    const res = await fetchWithTimeout(CONFIG.GOOGLE_APPS_SCRIPT_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify(signup)
-    });
+    }, CONFIG.SAVE_TIMEOUT_MS);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
     if (!(data.ok || data.success)) throw new Error(data.error || 'Ukendt fejl');
     els.editSaveStatus.textContent = 'Rettelse gemt.';
@@ -567,11 +607,14 @@ function kitchenMessage(event){
 function printEvent(eventId){
   const event = eventById(eventId);
   if (!event) return;
+  const wasOpen = els.eventDialog.open;
   els.eventDialogContent.innerHTML = detailHtml(event);
+  if (!wasOpen) els.eventDialog.showModal();
   document.body.classList.add('printing-event');
   setTimeout(() => {
     window.print();
     document.body.classList.remove('printing-event');
+    if (!wasOpen) els.eventDialog.close();
   }, 50);
 }
 
@@ -623,7 +666,9 @@ function getLatestRows(rows){
     if (!row || !row.eventId) return;
     const memberId = row.memberId || memberIdFromName(row.name);
     const key = `${row.eventId}__${memberId}`;
-    if (!latest[key] || new Date(row.updatedAt || 0) >= new Date(latest[key].updatedAt || 0)) latest[key] = { ...row, memberId };
+    const currentTime = timestampValue(row.updatedAt);
+    const previousTime = timestampValue(latest[key]?.updatedAt);
+    if (!latest[key] || currentTime >= previousTime) latest[key] = { ...row, memberId };
   });
   return latest;
 }
@@ -786,8 +831,11 @@ function normalizeTime(value){
 function normalizeDeadline(value, eventDate){
   const raw = String(value || '').trim();
   if (!raw) return '';
-  const date = normalizeDate(raw) || eventDate;
-  const time = normalizeTime(raw.includes(':') || raw.includes('.') ? raw : '23:59');
+  const hasDate = /\d{4}-\d{1,2}-\d{1,2}|\d{1,2}[.\/-]\d{1,2}[.\/-]\d{2,4}/.test(raw);
+  const date = hasDate ? normalizeDate(raw) : eventDate;
+  if (!date) return '';
+  const timeMatch = raw.match(/[T\s](\d{1,2})[:.](\d{2})/) || raw.match(/^(\d{1,2})[:.](\d{2})$/);
+  const time = timeMatch ? `${String(timeMatch[1]).padStart(2,'0')}:${timeMatch[2]}` : '23:59';
   return `${date}T${time}:00`;
 }
 
@@ -876,8 +924,35 @@ async function installApp(){
 
 function registerServiceWorker(){
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(err => console.warn('Service worker kunne ikke registreres', err));
+    navigator.serviceWorker.register(`sw.js?v=${APP_VERSION}`, { updateViaCache:'none' })
+      .catch(err => console.warn('Service worker kunne ikke registreres', err));
   }
+}
+
+async function fetchWithTimeout(url, options={}, timeoutMs=15000){
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal:controller.signal });
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+function timestampValue(value){
+  if (!value) return 0;
+  const direct = Date.parse(value);
+  if (Number.isFinite(direct)) return direct;
+  const raw = String(value).trim();
+  const dk = raw.match(/(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})(?:[ T](\d{1,2})[:.](\d{2})(?::(\d{2}))?)?/);
+  if (!dk) return 0;
+  const year = Number(dk[3].length === 2 ? `20${dk[3]}` : dk[3]);
+  return new Date(year, Number(dk[2]) - 1, Number(dk[1]), Number(dk[4] || 0), Number(dk[5] || 0), Number(dk[6] || 0)).getTime();
+}
+
+function formatCachedAt(value){
+  const d = new Date(value);
+  return isNaN(d) ? '' : `${shortDateFmt.format(d)} kl. ${timeFmt.format(d)}`;
 }
 
 function byName(a,b){ return String(a.name || '').localeCompare(String(b.name || ''), 'da'); }
