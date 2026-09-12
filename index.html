@@ -7,9 +7,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Restauratør" />
   <title>Restauratør · Concordia</title>
-  <link rel="manifest" href="manifest.webmanifest?v=2.2.1" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png?v=2.2.1" />
-  <link rel="stylesheet" href="style.css?v=2.2.1" />
+  <link rel="manifest" href="manifest.webmanifest?v=2.3.0" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png?v=2.3.0" />
+  <link rel="stylesheet" href="style.css?v=2.3.0" />
 </head>
 <body>
   <div id="loadingScreen" class="loading-screen" role="status" aria-live="polite">
@@ -80,6 +80,16 @@
         </label>
       </section>
       <section id="editSummary" class="detail-area"></section>
+      <section id="externalGuestBlock" class="page-card external-guest-card">
+        <div class="external-guest-head">
+          <div>
+            <div class="section-title"><span></span><h2>Eksterne gæster</h2></div>
+            <p class="help-text">Tilføj personer, som ikke er tilmeldt gennem en broder.</p>
+          </div>
+          <button id="addExternalGuestBtn" class="btn primary" type="button">+ Tilføj</button>
+        </div>
+        <div id="externalGuestList" class="external-guest-list"></div>
+      </section>
       <section class="list-block">
         <div class="section-title"><span></span><h2>Brødre</h2></div>
         <div id="memberList" class="member-list"></div>
@@ -101,12 +111,12 @@
 
         <div class="about-box">
           <h3>Formål</h3>
-          <p>Appen giver et hurtigt køkkenoverblik over logeaftener: kuverter, brødre til mad, gæster, deltagere uden mad og brødre der endnu ikke har svaret.</p>
+          <p>Appen giver et hurtigt køkkenoverblik over logeaftener: kuverter, brødre til mad, medbragte gæster, eksterne gæster, deltagere uden mad og brødre der endnu ikke har svaret.</p>
         </div>
 
         <div class="about-box">
           <h3>Sådan bruges den</h3>
-          <p><strong>Overblik</strong> viser kommende aftener og madtal. <strong>Næste</strong> viser køkkenlisten. <strong>Ret</strong> bruges til at ændre tilmeldinger. <strong>Arkiv</strong> viser tidligere aftener.</p>
+          <p><strong>Overblik</strong> viser kommende aftener og madtal. <strong>Næste</strong> viser køkkenlisten. <strong>Ret</strong> bruges til at ændre tilmeldinger og tilføje eksterne gæster. <strong>Arkiv</strong> viser tidligere aftener.</p>
         </div>
 
         <div class="about-box">
@@ -120,7 +130,7 @@
         </div>
 
         <p class="about-note">Køkkenbeskeden kan kopieres og sendes videre, og overblikket kan printes direkte fra browseren.</p>
-        <p class="app-version">Version <span id="appVersion">2.2.1</span></p>
+        <p class="app-version">Version <span id="appVersion">2.3.0</span></p>
       </section>
     </main>
 
@@ -180,6 +190,32 @@
     </div>
   </dialog>
 
-  <script src="app.js?v=2.2.1"></script>
+  <dialog id="externalGuestDialog" class="sheet-dialog">
+    <div class="sheet edit-sheet">
+      <button id="closeExternalGuestDialog" class="close" type="button" aria-label="Luk">×</button>
+      <div class="sheet-scroll">
+        <p id="externalGuestEventLabel" class="modal-sub"></p>
+        <h2 class="modal-title">Tilføj eksterne gæster</h2>
+        <p class="description compact">De tæller som kuverter, men ikke som brødre.</p>
+
+        <label class="field-label">Navn eller beskrivelse <span class="field-hint">(valgfrit)</span>
+          <input id="externalGuestName" type="text" placeholder="F.eks. gæst fra nabologe" />
+        </label>
+        <label class="field-label">Antal
+          <input id="externalGuestCount" type="number" min="1" max="50" value="1" inputmode="numeric" />
+        </label>
+        <label class="field-label">Bemærkning <span class="field-hint">(valgfrit)</span>
+          <textarea id="externalGuestNote" rows="3" placeholder="F.eks. vegetar, allergi eller anden note"></textarea>
+        </label>
+
+        <div class="modal-actions sticky-actions">
+          <button id="saveExternalGuestBtn" class="btn primary wide-btn" type="button">Tilføj til køkkenet</button>
+        </div>
+        <p id="externalGuestSaveStatus" class="save-status" aria-live="polite"></p>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="app.js?v=2.3.0"></script>
 </body>
 </html>

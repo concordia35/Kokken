@@ -1,4 +1,4 @@
-const APP_VERSION = '2.2.1';
+const APP_VERSION = '2.3.0';
 const CONFIG = {
   GOOGLE_APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw5kZ4Yjgge_sKnxhSjjVLkb8cI-hG0E_qcScyxP7820a7lzfCr42HhZDp3lW2kmNsy/exec',
   LOAD_TIMEOUT_MS: 15000,
@@ -52,7 +52,18 @@ const els = {
   editGuestMeal: $('#editGuestMeal'),
   editNote: $('#editNote'),
   saveEdit: $('#saveEditBtn'),
-  editSaveStatus: $('#editSaveStatus')
+  editSaveStatus: $('#editSaveStatus'),
+  externalGuestBlock: $('#externalGuestBlock'),
+  externalGuestList: $('#externalGuestList'),
+  addExternalGuestBtn: $('#addExternalGuestBtn'),
+  externalGuestDialog: $('#externalGuestDialog'),
+  closeExternalGuestDialog: $('#closeExternalGuestDialog'),
+  externalGuestEventLabel: $('#externalGuestEventLabel'),
+  externalGuestName: $('#externalGuestName'),
+  externalGuestCount: $('#externalGuestCount'),
+  externalGuestNote: $('#externalGuestNote'),
+  saveExternalGuestBtn: $('#saveExternalGuestBtn'),
+  externalGuestSaveStatus: $('#externalGuestSaveStatus')
 };
 
 const storage = {
@@ -111,6 +122,10 @@ function bind(){
   $$('[data-edit-meal]').forEach(btn => btn.addEventListener('click', () => chooseMeal(btn.dataset.editMeal)));
   els.editGuest?.addEventListener('change', syncEditControls);
   els.saveEdit?.addEventListener('click', saveEdit);
+  els.addExternalGuestBtn?.addEventListener('click', openExternalGuestDialog);
+  els.closeExternalGuestDialog?.addEventListener('click', closeExternalGuestDialog);
+  els.externalGuestDialog?.addEventListener('click', event => closeDialogOnBackdrop(event, els.externalGuestDialog));
+  els.saveExternalGuestBtn?.addEventListener('click', saveExternalGuests);
 
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();
@@ -186,6 +201,7 @@ function renderAll(){
   renderNextView();
   renderEditEventSelect();
   renderEditView();
+  renderExternalGuests();
   renderArchive();
   renderChanges();
 }
@@ -207,7 +223,8 @@ function renderDashboard(){
           <div class="hero-numbers">
             ${statHtml(s.totalMeals, 'Kuverter')}
             ${statHtml(s.memberMeals, 'Brødre')}
-            ${statHtml(s.guestMeals, 'Gæster')}
+            ${statHtml(s.guestMeals, 'Medbragte')}
+            ${statHtml(s.externalMeals, 'Eksterne')}
             ${statHtml(s.noReply, 'Ikke svaret')}
           </div>
           <div class="card-actions">
@@ -267,6 +284,7 @@ function renderEditView(){
     return;
   }
   els.editSummary.innerHTML = compactSummaryHtml(event);
+  renderExternalGuests();
   renderMembers();
   bindDynamicActions();
 }
@@ -338,7 +356,8 @@ function detailHtml(event, options={}){
       <div class="stats-grid">
         ${statHtml(s.totalMeals, 'Kuverter i alt')}
         ${statHtml(s.memberMeals, 'Brødre til mad')}
-        ${statHtml(s.guestMeals, 'Gæster til mad')}
+        ${statHtml(s.guestMeals, 'Medbragte gæster')}
+        ${statHtml(s.externalMeals, 'Eksterne gæster')}
         ${statHtml(s.attendingNoMeal, 'Uden mad')}
         ${statHtml(s.noReply, 'Ikke svaret')}
         ${statHtml(s.notAttending, 'Deltager ikke')}
@@ -359,7 +378,8 @@ function detailHtml(event, options={}){
         </div>` : ''}
 
       ${listBlock('Spiser med', groups.memberMeals, 'Ingen brødre er tilmeldt mad.', row => esc(row.name))}
-      ${listBlock('Gæster til mad', groups.guestMeals, 'Ingen gæster til mad.', row => `${esc(row.name)}${row.guestName ? ` · gæst: ${esc(row.guestName)}` : ' · gæst'}`)}
+      ${listBlock('Medbragte gæster til mad', groups.guestMeals, 'Ingen medbragte gæster til mad.', row => `${esc(row.name)}${row.guestName ? ` · gæst: ${esc(row.guestName)}` : ' · gæst'}`)}
+      ${listBlock('Eksterne gæster', groups.externalMeals, 'Ingen eksterne gæster.', row => `${esc(externalGuestLabel(row))}${row.note ? ` · ${esc(row.note)}` : ''}`)}
       ${listBlock('Deltager uden mad', groups.attendingNoMeal, 'Ingen deltagere uden mad.', row => esc(row.name))}
       ${listBlock('Noter', groups.notes, 'Ingen noter.', row => `<strong>${esc(row.name)}</strong><br><span>${esc(row.note)}</span>`)}
       ${listBlock('Mangler svar', groups.noReply, 'Alle har svaret.', member => esc(member.name))}
@@ -380,7 +400,8 @@ function compactSummaryHtml(event){
       <div class="stats-grid small-stats">
         ${statHtml(s.totalMeals, 'Kuverter')}
         ${statHtml(s.memberMeals, 'Brødre')}
-        ${statHtml(s.guestMeals, 'Gæster')}
+        ${statHtml(s.guestMeals, 'Medbragte')}
+        ${statHtml(s.externalMeals, 'Eksterne')}
         ${statHtml(s.noReply, 'Mangler')}
       </div>
       <div class="action-grid">
@@ -547,14 +568,7 @@ async function saveEdit(){
   try {
     els.editSaveStatus.textContent = 'Gemmer rettelse…';
     els.saveEdit.disabled = true;
-    const res = await fetchWithTimeout(CONFIG.GOOGLE_APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(signup)
-    }, CONFIG.SAVE_TIMEOUT_MS);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (!(data.ok || data.success)) throw new Error(data.error || 'Ukendt fejl');
+    await postSignup(signup);
     els.editSaveStatus.textContent = 'Rettelse gemt.';
     await loadData(true);
     setTimeout(() => closeEditDialog(), 400);
@@ -564,6 +578,137 @@ async function saveEdit(){
   } finally {
     els.saveEdit.disabled = false;
   }
+}
+
+function renderExternalGuests(){
+  if (!els.externalGuestList || !els.externalGuestBlock) return;
+  const event = eventById(state.selectedEventId);
+  if (!event) {
+    els.externalGuestList.innerHTML = '<div class="empty">Vælg en logeaften.</div>';
+    return;
+  }
+  const rows = getGroups(event.id).externalMeals;
+  els.externalGuestList.innerHTML = rows.length ? rows.map(row => `
+    <div class="external-guest-row">
+      <div>
+        <strong>${esc(externalGuestLabel(row))}</strong>
+        ${row.note ? `<span>${esc(row.note)}</span>` : '<span>Ekstern gæst</span>'}
+      </div>
+      <button class="btn ghost small-btn" type="button" data-remove-external="${esc(row.memberId)}" data-event-id="${esc(event.id)}">Fjern</button>
+    </div>
+  `).join('') : '<p class="help-text">Ingen eksterne gæster er tilføjet.</p>';
+
+  $$('[data-remove-external]').forEach(btn => btn.onclick = () => removeExternalGuest(btn.dataset.eventId, btn.dataset.removeExternal));
+}
+
+function openExternalGuestDialog(){
+  const event = eventById(state.selectedEventId);
+  if (!event) return;
+  els.externalGuestEventLabel.textContent = `${cap(formatDate(event.date))} · ${event.title}`;
+  els.externalGuestName.value = '';
+  els.externalGuestCount.value = '1';
+  els.externalGuestNote.value = '';
+  els.externalGuestSaveStatus.textContent = '';
+  els.externalGuestDialog.showModal();
+  setTimeout(() => els.externalGuestName.focus(), 50);
+}
+
+function closeExternalGuestDialog(){
+  els.externalGuestDialog.close();
+}
+
+async function saveExternalGuests(){
+  const event = eventById(state.selectedEventId);
+  if (!event) return;
+  const count = Math.max(1, Math.min(50, Number.parseInt(els.externalGuestCount.value || '1', 10) || 1));
+  const label = els.externalGuestName.value.trim() || 'Ekstern gæst';
+  const note = els.externalGuestNote.value.trim();
+
+  try {
+    els.externalGuestSaveStatus.textContent = count > 1 ? `Gemmer ${count} eksterne gæster…` : 'Gemmer ekstern gæst…';
+    els.saveExternalGuestBtn.disabled = true;
+    const base = Date.now();
+    for (let i = 0; i < count; i++) {
+      const suffix = `${base}_${i}_${Math.random().toString(36).slice(2,7)}`;
+      const signup = {
+        memberId: `external_${event.id}_${suffix}`,
+        name: `Ekstern gæst: ${label}`,
+        navn: `Ekstern gæst: ${label}`,
+        eventId: event.id,
+        eventDate: event.date,
+        eventTime: event.time,
+        eventTitle: event.title,
+        attending: 'yes',
+        deltager: 'yes',
+        meal: 'yes',
+        mad: 'yes',
+        guest: 'no',
+        guestName: '',
+        guestFood: 'no',
+        guestMeal: 'no',
+        note,
+        externalGuest: 'yes',
+        updatedAt: new Date().toISOString(),
+        editedBy: 'Restauratør-app'
+      };
+      await postSignup(signup);
+    }
+    els.externalGuestSaveStatus.textContent = count > 1 ? `${count} eksterne gæster er tilføjet.` : 'Ekstern gæst er tilføjet.';
+    await loadData(true);
+    setTimeout(() => closeExternalGuestDialog(), 450);
+  } catch (err) {
+    console.warn('Kunne ikke gemme ekstern gæst', err);
+    els.externalGuestSaveStatus.textContent = 'Kunne ikke gemme den eksterne gæst.';
+  } finally {
+    els.saveExternalGuestBtn.disabled = false;
+  }
+}
+
+async function removeExternalGuest(eventId, memberId){
+  const row = latestFor(eventId, memberId);
+  const event = eventById(eventId);
+  if (!row || !event || !isExternalRow(row)) return;
+  try {
+    const signup = {
+      memberId,
+      name: row.name || 'Ekstern gæst',
+      navn: row.name || 'Ekstern gæst',
+      eventId: event.id,
+      eventDate: event.date,
+      eventTime: event.time,
+      eventTitle: event.title,
+      attending: 'no',
+      deltager: 'no',
+      meal: 'no',
+      mad: 'no',
+      guest: 'no',
+      guestName: '',
+      guestFood: 'no',
+      guestMeal: 'no',
+      note: row.note || '',
+      externalGuest: 'yes',
+      updatedAt: new Date().toISOString(),
+      editedBy: 'Restauratør-app'
+    };
+    await postSignup(signup);
+    await loadData(true);
+    showToast('Ekstern gæst fjernet.');
+  } catch (err) {
+    console.warn('Kunne ikke fjerne ekstern gæst', err);
+    showToast('Kunne ikke fjerne gæsten.');
+  }
+}
+
+async function postSignup(signup){
+  const res = await fetchWithTimeout(CONFIG.GOOGLE_APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(signup)
+  }, CONFIG.SAVE_TIMEOUT_MS);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if (!(data.ok || data.success)) throw new Error(data.error || 'Ukendt fejl');
+  return data;
 }
 
 function copyKitchenMessage(eventId){
@@ -580,7 +725,8 @@ function kitchenMessage(event){
   const s = getSummary(event.id);
   const groups = getGroups(event.id);
   const notes = groups.notes.length ? groups.notes.map(r => `- ${r.name}: ${r.note}`).join('\n') : '- Ingen noter';
-  const guests = groups.guestMeals.length ? groups.guestMeals.map(r => `- ${r.name}${r.guestName ? `: ${r.guestName}` : ': gæst'}`).join('\n') : '- Ingen gæster til mad';
+  const guests = groups.guestMeals.length ? groups.guestMeals.map(r => `- ${r.name}${r.guestName ? `: ${r.guestName}` : ': gæst'}`).join('\n') : '- Ingen medbragte gæster til mad';
+  const externalGuests = groups.externalMeals.length ? groups.externalMeals.map(r => `- ${externalGuestLabel(r)}${r.note ? `: ${r.note}` : ''}`).join('\n') : '- Ingen eksterne gæster';
   const missing = groups.noReply.length ? groups.noReply.map(m => m.name).join(', ') : 'Ingen';
 
   return [
@@ -589,13 +735,17 @@ function kitchenMessage(event){
     '',
     `Kuverter i alt: ${s.totalMeals}`,
     `Brødre til mad: ${s.memberMeals}`,
-    `Gæster til mad: ${s.guestMeals}`,
+    `Medbragte gæster til mad: ${s.guestMeals}`,
+    `Eksterne gæster til mad: ${s.externalMeals}`, 
     `Deltager uden mad: ${s.attendingNoMeal}`,
     `Deltager ikke: ${s.notAttending}`,
     `Ikke svaret: ${s.noReply}`,
     '',
-    'Gæster:',
+    'Medbragte gæster:',
     guests,
+    '',
+    'Eksterne gæster:',
+    externalGuests,
     '',
     'Noter:',
     notes,
@@ -631,7 +781,8 @@ function getSummary(eventId){
     attending: groups.attending.length,
     memberMeals: groups.memberMeals.length,
     guestMeals: groups.guestMeals.length,
-    totalMeals: groups.memberMeals.length + groups.guestMeals.length,
+    externalMeals: groups.externalMeals.length,
+    totalMeals: groups.memberMeals.length + groups.guestMeals.length + groups.externalMeals.length,
     attendingNoMeal: groups.attendingNoMeal.length,
     notAttending: groups.notAttending.length,
     noReply: groups.noReply.length
@@ -640,16 +791,28 @@ function getSummary(eventId){
 
 function getGroups(eventId){
   const latestRows = Object.values(state.latest).filter(r => r.eventId === eventId);
-  const byMember = new Map(latestRows.map(r => [String(r.memberId || memberIdFromName(r.name)), r]));
+  const memberRows = latestRows.filter(r => !isExternalRow(r));
+  const externalRows = latestRows.filter(isExternalRow);
+  const byMember = new Map(memberRows.map(r => [String(r.memberId || memberIdFromName(r.name)), r]));
 
-  const attending = latestRows.filter(r => r.attending === 'yes').sort(byName);
+  const attending = memberRows.filter(r => r.attending === 'yes').sort(byName);
   const memberMeals = attending.filter(r => r.meal === 'yes').sort(byName);
   const guestMeals = attending.filter(r => r.guestMeal === 'yes').sort(byName);
+  const externalMeals = externalRows.filter(r => r.attending === 'yes' && r.meal === 'yes').sort(byName);
   const attendingNoMeal = attending.filter(r => r.meal !== 'yes').sort(byName);
-  const notAttending = latestRows.filter(r => r.attending === 'no').sort(byName);
-  const notes = latestRows.filter(r => String(r.note || '').trim()).sort(byName);
+  const notAttending = memberRows.filter(r => r.attending === 'no').sort(byName);
+  const notes = latestRows.filter(r => r.attending === 'yes' && String(r.note || '').trim()).sort(byName);
   const noReply = state.members.filter(m => !byMember.has(String(m.id))).sort((a,b) => a.name.localeCompare(b.name, 'da'));
-  return { attending, memberMeals, guestMeals, attendingNoMeal, notAttending, notes, noReply };
+  return { attending, memberMeals, guestMeals, externalMeals, externalRows, attendingNoMeal, notAttending, notes, noReply };
+}
+
+function isExternalRow(row){
+  return String(row?.memberId || '').startsWith('external_') || row?.externalGuest === true || row?.externalGuest === 'yes';
+}
+
+function externalGuestLabel(row){
+  const raw = String(row?.name || '').replace(/^Ekstern gæst:\s*/i, '').trim();
+  return raw || 'Ekstern gæst';
 }
 
 function membersWithStatus(eventId){
@@ -798,6 +961,7 @@ function normalizeRow(row){
     guestName: String(row.guestName || row.gaesteNavn || row.gæsteNavn || row.gaestNavn || '').trim(),
     guestMeal: yn(row.guestMeal || row.guestFood || row.gaestMad || row.gæstMad),
     note: String(row.note || row.bemaerkning || row.bemærkning || '').trim(),
+    externalGuest: isYes(row.externalGuest || row.eksternGaest || row.eksternGæst) || String(row.memberId || '').startsWith('external_'),
     updatedAt: row.updatedAt || row.timestamp || row.tidspunkt || new Date().toISOString()
   };
 }

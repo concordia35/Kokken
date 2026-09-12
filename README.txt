@@ -1,5 +1,5 @@
 Restauratør · Concordia
-Version 2.2.1
+Version 2.3.0
 
 Separat app til restauratøren/madansvarlig.
 
@@ -44,3 +44,11 @@ Version 2.2.1:
 - PWA-cachen er versionsopdateret og matcher de versionsmærkede filer.
 - Navigation fra overbliksdialogen til rettelser lukker dialogen korrekt.
 - Tablet-, desktop- og printlayout er justeret mod overlap og vandret scroll.
+
+
+Version 2.3.0:
+- Restauratøren kan tilføje eksterne gæster til en valgt logeaften.
+- Eksterne gæster gemmes i samme tilmeldingsark og tæller med i det samlede antal kuverter.
+- Eksterne gæster holdes adskilt fra brødre og medbragte gæster i overblik og køkkenbesked.
+- Eksterne gæster kan fjernes igen fra Ret-visningen.
+- Der kan tilføjes flere eksterne gæster på én gang med navn/beskrivelse og valgfri bemærkning.
