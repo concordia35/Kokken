@@ -7,9 +7,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Restauratør" />
   <title>Restauratør · Concordia</title>
-  <link rel="manifest" href="manifest.webmanifest?v=2.3.0" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png?v=2.3.0" />
-  <link rel="stylesheet" href="style.css?v=2.3.0" />
+  <link rel="manifest" href="manifest.webmanifest?v=2.3.1" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png?v=2.3.1" />
+  <link rel="stylesheet" href="style.css?v=2.3.1" />
 </head>
 <body>
   <div id="loadingScreen" class="loading-screen" role="status" aria-live="polite">
@@ -130,7 +130,7 @@
         </div>
 
         <p class="about-note">Køkkenbeskeden kan kopieres og sendes videre, og overblikket kan printes direkte fra browseren.</p>
-        <p class="app-version">Version <span id="appVersion">2.3.0</span></p>
+        <p class="app-version">Version <span id="appVersion">2.3.1</span></p>
       </section>
     </main>
 
@@ -168,13 +168,27 @@
         </div>
 
         <div class="choice-block">
-          <h3>Gæst</h3>
-          <label class="checkline"><input id="editGuest" type="checkbox" /> Har gæst med</label>
+          <h3>Gæster</h3>
+          <label class="field-label">Antal gæster
+            <select id="editGuestCount">
+              <option value="0">Ingen gæster</option>
+              <option value="1">1 gæst</option>
+              <option value="2">2 gæster</option>
+              <option value="3">3 gæster</option>
+              <option value="4">4 gæster</option>
+              <option value="5">5 gæster</option>
+              <option value="6">6 gæster</option>
+              <option value="7">7 gæster</option>
+              <option value="8">8 gæster</option>
+              <option value="9">9 gæster</option>
+              <option value="10">10 gæster</option>
+            </select>
+          </label>
           <div id="editGuestDetails" class="guest-details" hidden>
-            <label class="field-label">Gæstens navn
-              <input id="editGuestName" type="text" placeholder="Navn på gæst" />
+            <label class="field-label">Navn på gæst(er)
+              <input id="editGuestName" type="text" placeholder="Fx Anna, Peter" />
             </label>
-            <label class="checkline"><input id="editGuestMeal" type="checkbox" /> Gæsten spiser med</label>
+            <label class="checkline"><input id="editGuestMeal" type="checkbox" /> Gæsten/gæsterne spiser med</label>
           </div>
         </div>
 
@@ -216,6 +230,6 @@
     </div>
   </dialog>
 
-  <script src="app.js?v=2.3.0"></script>
+  <script src="app.js?v=2.3.1"></script>
 </body>
 </html>

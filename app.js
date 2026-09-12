@@ -1,4 +1,4 @@
-const APP_VERSION = '2.3.0';
+const APP_VERSION = '2.3.1';
 const CONFIG = {
   GOOGLE_APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw5kZ4Yjgge_sKnxhSjjVLkb8cI-hG0E_qcScyxP7820a7lzfCr42HhZDp3lW2kmNsy/exec',
   LOAD_TIMEOUT_MS: 15000,
@@ -46,7 +46,7 @@ const els = {
   editName: $('#editName'),
   editCurrentStatus: $('#editCurrentStatus'),
   editMealBlock: $('#editMealBlock'),
-  editGuest: $('#editGuest'),
+  editGuestCount: $('#editGuestCount'),
   editGuestDetails: $('#editGuestDetails'),
   editGuestName: $('#editGuestName'),
   editGuestMeal: $('#editGuestMeal'),
@@ -120,7 +120,7 @@ function bind(){
 
   $$('[data-edit-attending]').forEach(btn => btn.addEventListener('click', () => chooseAttending(btn.dataset.editAttending)));
   $$('[data-edit-meal]').forEach(btn => btn.addEventListener('click', () => chooseMeal(btn.dataset.editMeal)));
-  els.editGuest?.addEventListener('change', syncEditControls);
+  els.editGuestCount?.addEventListener('change', syncEditControls);
   els.saveEdit?.addEventListener('click', saveEdit);
   els.addExternalGuestBtn?.addEventListener('click', openExternalGuestDialog);
   els.closeExternalGuestDialog?.addEventListener('click', closeExternalGuestDialog);
@@ -378,7 +378,7 @@ function detailHtml(event, options={}){
         </div>` : ''}
 
       ${listBlock('Spiser med', groups.memberMeals, 'Ingen brødre er tilmeldt mad.', row => esc(row.name))}
-      ${listBlock('Medbragte gæster til mad', groups.guestMeals, 'Ingen medbragte gæster til mad.', row => `${esc(row.name)}${row.guestName ? ` · gæst: ${esc(row.guestName)}` : ' · gæst'}`)}
+      ${listBlock('Medbragte gæster til mad', groups.guestMeals, 'Ingen medbragte gæster til mad.', row => `${esc(row.name)} · ${row.guestCount || 1} ${(row.guestCount || 1) === 1 ? 'gæst' : 'gæster'}${row.guestName ? `: ${esc(row.guestName)}` : ''}`)}
       ${listBlock('Eksterne gæster', groups.externalMeals, 'Ingen eksterne gæster.', row => `${esc(externalGuestLabel(row))}${row.note ? ` · ${esc(row.note)}` : ''}`)}
       ${listBlock('Deltager uden mad', groups.attendingNoMeal, 'Ingen deltagere uden mad.', row => esc(row.name))}
       ${listBlock('Noter', groups.notes, 'Ingen noter.', row => `<strong>${esc(row.name)}</strong><br><span>${esc(row.note)}</span>`)}
@@ -463,6 +463,7 @@ function openEditDialog(eventId, memberId){
     attending: signup?.attending || null,
     meal: signup?.meal || null,
     guest: signup?.guest === 'yes',
+    guestCount: signup?.guestCount || (signup?.guest === 'yes' ? 1 : 0),
     guestName: signup?.guestName || '',
     guestMeal: signup?.guestMeal === 'yes',
     note: signup?.note || ''
@@ -471,7 +472,7 @@ function openEditDialog(eventId, memberId){
   els.editEventLabel.textContent = `${cap(formatDate(event.date))} · ${event.title}`;
   els.editName.textContent = member.name;
   els.editCurrentStatus.textContent = signup ? `Nuværende: ${statusText(signup)}${signup.updatedAt ? ` · ${formatUpdated(signup.updatedAt)}` : ''}` : 'Nuværende: ikke svaret';
-  els.editGuest.checked = state.currentEdit.guest;
+  els.editGuestCount.value = String(state.currentEdit.guestCount || 0);
   els.editGuestName.value = state.currentEdit.guestName;
   els.editGuestMeal.checked = state.currentEdit.guestMeal;
   els.editNote.value = state.currentEdit.note;
@@ -492,9 +493,10 @@ function chooseAttending(value){
   if (value === 'no') {
     state.currentEdit.meal = 'no';
     state.currentEdit.guest = false;
+    state.currentEdit.guestCount = 0;
     state.currentEdit.guestName = '';
     state.currentEdit.guestMeal = false;
-    els.editGuest.checked = false;
+    els.editGuestCount.value = '0';
     els.editGuestName.value = '';
     els.editGuestMeal.checked = false;
   }
@@ -509,7 +511,8 @@ function chooseMeal(value){
 
 function syncEditControls(){
   if (!state.currentEdit) return;
-  state.currentEdit.guest = els.editGuest.checked;
+  state.currentEdit.guestCount = Math.max(0, Math.min(10, Number.parseInt(els.editGuestCount.value || '0', 10) || 0));
+  state.currentEdit.guest = state.currentEdit.guestCount > 0;
   if (!state.currentEdit.guest) {
     els.editGuestName.value = '';
     els.editGuestMeal.checked = false;
@@ -525,10 +528,10 @@ function syncEditControls(){
 
   const disabled = state.currentEdit.attending !== 'yes';
   els.editMealBlock.style.opacity = disabled ? '.55' : '1';
-  els.editGuest.disabled = disabled;
-  els.editGuestDetails.hidden = !els.editGuest.checked || disabled;
-  els.editGuestName.disabled = disabled || !els.editGuest.checked;
-  els.editGuestMeal.disabled = disabled || !els.editGuest.checked;
+  els.editGuestCount.disabled = disabled;
+  els.editGuestDetails.hidden = state.currentEdit.guestCount < 1 || disabled;
+  els.editGuestName.disabled = disabled || state.currentEdit.guestCount < 1;
+  els.editGuestMeal.disabled = disabled || state.currentEdit.guestCount < 1;
 }
 
 async function saveEdit(){
@@ -556,10 +559,14 @@ async function saveEdit(){
     deltager: edit.attending,
     meal: edit.attending === 'yes' ? edit.meal : 'no',
     mad: edit.attending === 'yes' ? edit.meal : 'no',
-    guest: edit.attending === 'yes' && els.editGuest.checked ? 'yes' : 'no',
-    guestName: edit.attending === 'yes' && els.editGuest.checked ? els.editGuestName.value.trim() : '',
-    guestFood: edit.attending === 'yes' && els.editGuest.checked && els.editGuestMeal.checked ? 'yes' : 'no',
-    guestMeal: edit.attending === 'yes' && els.editGuest.checked && els.editGuestMeal.checked ? 'yes' : 'no',
+    guest: edit.attending === 'yes' && Number.parseInt(els.editGuestCount.value || '0', 10) > 0 ? 'yes' : 'no',
+    guestCount: edit.attending === 'yes' ? Math.max(0, Math.min(10, Number.parseInt(els.editGuestCount.value || '0', 10) || 0)) : 0,
+    guestName: buildStoredGuestName(
+      edit.attending === 'yes' ? Math.max(0, Math.min(10, Number.parseInt(els.editGuestCount.value || '0', 10) || 0)) : 0,
+      els.editGuestName.value.trim()
+    ),
+    guestFood: edit.attending === 'yes' && Number.parseInt(els.editGuestCount.value || '0', 10) > 0 && els.editGuestMeal.checked ? 'yes' : 'no',
+    guestMeal: edit.attending === 'yes' && Number.parseInt(els.editGuestCount.value || '0', 10) > 0 && els.editGuestMeal.checked ? 'yes' : 'no',
     note: els.editNote.value.trim(),
     updatedAt: new Date().toISOString(),
     editedBy: 'Restauratør-app'
@@ -780,9 +787,9 @@ function getSummary(eventId){
   return {
     attending: groups.attending.length,
     memberMeals: groups.memberMeals.length,
-    guestMeals: groups.guestMeals.length,
+    guestMeals: groups.guestMeals.reduce((sum, row) => sum + (row.guestCount || 1), 0),
     externalMeals: groups.externalMeals.length,
-    totalMeals: groups.memberMeals.length + groups.guestMeals.length + groups.externalMeals.length,
+    totalMeals: groups.memberMeals.length + groups.guestMeals.reduce((sum, row) => sum + (row.guestCount || 1), 0) + groups.externalMeals.length,
     attendingNoMeal: groups.attendingNoMeal.length,
     notAttending: groups.notAttending.length,
     noReply: groups.noReply.length
@@ -930,6 +937,24 @@ function normalizeEvent(e){
   };
 }
 
+function buildStoredGuestName(count, names){
+  if (!count) return '';
+  const cleanNames = String(names || '').trim();
+  return `${count} ${count === 1 ? 'gæst' : 'gæster'}${cleanNames ? `: ${cleanNames}` : ''}`;
+}
+
+function parseGuestCount(rawCount, storedName, guestFlag){
+  const direct = Number.parseInt(rawCount, 10);
+  if (Number.isFinite(direct) && direct >= 0) return Math.min(10, direct);
+  const match = String(storedName || '').trim().match(/^(\d{1,2})\s+gæst(?:er)?(?:\s*:|$)/i);
+  if (match) return Math.min(10, Number.parseInt(match[1], 10) || 0);
+  return guestFlag === 'yes' ? 1 : 0;
+}
+
+function cleanStoredGuestName(value){
+  return String(value || '').replace(/^\d{1,2}\s+gæst(?:er)?\s*:\s*/i, '').replace(/^\d{1,2}\s+gæst(?:er)?$/i, '').trim();
+}
+
 function normalizeRows(input){
   if (!Array.isArray(input) || !input.length) return [];
   let rows;
@@ -958,7 +983,8 @@ function normalizeRow(row){
     attending: yn(row.attending || row.deltager || row.deltagelse),
     meal: yn(row.meal || row.mad || row.spiser),
     guest: yn(row.guest || row.gaest || row.gæst),
-    guestName: String(row.guestName || row.gaesteNavn || row.gæsteNavn || row.gaestNavn || '').trim(),
+    guestCount: parseGuestCount(row.guestCount, row.guestName || row.gaesteNavn || row.gæsteNavn || row.gaestNavn, yn(row.guest || row.gaest || row.gæst)),
+    guestName: cleanStoredGuestName(String(row.guestName || row.gaesteNavn || row.gæsteNavn || row.gaestNavn || '').trim()),
     guestMeal: yn(row.guestMeal || row.guestFood || row.gaestMad || row.gæstMad),
     note: String(row.note || row.bemaerkning || row.bemærkning || '').trim(),
     externalGuest: isYes(row.externalGuest || row.eksternGaest || row.eksternGæst) || String(row.memberId || '').startsWith('external_'),
@@ -1018,8 +1044,8 @@ function memberIdFromName(name){ return state.members.find(m => norm(m.name) ===
 function statusText(signup){
   if (!signup) return 'Ikke svaret';
   if (signup.attending === 'no') return 'Deltager ikke';
-  if (signup.attending === 'yes' && signup.meal === 'yes') return signup.guestMeal === 'yes' ? 'Deltager · mad · gæstemad' : 'Deltager · mad';
-  if (signup.attending === 'yes') return signup.guestMeal === 'yes' ? 'Deltager · uden mad · gæstemad' : 'Deltager · uden mad';
+  if (signup.attending === 'yes' && signup.meal === 'yes') return signup.guestMeal === 'yes' ? `Deltager · mad · ${signup.guestCount || 1} gæstemad` : 'Deltager · mad';
+  if (signup.attending === 'yes') return signup.guestMeal === 'yes' ? `Deltager · uden mad · ${signup.guestCount || 1} gæstemad` : 'Deltager · uden mad';
   return 'Ikke svaret';
 }
 
@@ -1028,7 +1054,7 @@ function plainStatus(signup){
   let parts = [];
   parts.push(signup.attending === 'yes' ? 'deltager' : 'deltager ikke');
   if (signup.attending === 'yes') parts.push(signup.meal === 'yes' ? 'mad' : 'uden mad');
-  if (signup.guestMeal === 'yes') parts.push('gæstemad');
+  if (signup.guestMeal === 'yes') parts.push(`${signup.guestCount || 1} gæstemad`);
   if (signup.note) parts.push('note');
   return parts.join(' · ');
 }
