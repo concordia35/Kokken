@@ -1,5 +1,5 @@
 Restauratør · Concordia
-Version 2.3.2
+Version 2.4.0
 
 Separat app til restauratøren/madansvarlig.
 
@@ -59,3 +59,11 @@ Version 2.3.2:
 - Læser antal medbragte gæster fra brødre-appen uden at ændre køkken-appens eksisterende gemmeflow.
 - Summerer medbragte gæster og gæstekuverter korrekt.
 - PWA-cache versionsnummer er opdateret, så gamle 2.3.1-filer ikke hænger fast.
+
+
+Version 2.4.0:
+- Ny Besked-side til manuelle push-notifikationer til brødrene.
+- Overskrift, besked, forhåndsvisning og bekræftelse før afsendelse.
+- Kan åbne brødre-appen, når modtageren trykker på notifikationen.
+- Push sendes via det eksisterende Google Apps Script, så OneSignal API-nøglen ikke ligger i PWA-koden.
+- Kræver at Apps Script udvides med sendPush-handling og ONESIGNAL_API_KEY i Script Properties.

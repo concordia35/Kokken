@@ -322,3 +322,15 @@ textarea:focus-visible{
 .field-hint{font-weight:700;color:var(--muted);font-size:12px}
 @media (min-width:1100px){#viewEdit #externalGuestBlock{grid-column:1;grid-row:3;margin-top:0}#viewEdit .list-block{grid-row:1 / span 3}}
 @media (max-width:430px){.external-guest-head{display:grid}.external-guest-head .btn{width:100%}}
+
+/* Version 2.4.0 · manuelle push-beskeder */
+.message-card{max-width:720px;margin:0 auto;display:grid;gap:16px}
+.message-card .section-title{margin-bottom:0}
+.push-link-option{margin:2px 0 0}
+.push-preview{display:grid;gap:5px;padding:15px 16px;border-radius:18px;background:rgba(255,248,235,.82);border:1px solid rgba(159,120,59,.22);box-shadow:0 8px 24px rgba(70,30,20,.06)}
+.push-preview small{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:900}
+.push-preview strong{font-size:16px;color:var(--ink)}
+.push-preview span{font-size:14px;line-height:1.45;color:var(--muted);overflow-wrap:anywhere}
+.push-send-btn{margin-top:2px}
+.push-warning{margin:0;font-size:12px;line-height:1.45;color:var(--muted);font-weight:750}
+@media (min-width:760px){#viewMessage{padding-top:54px}.message-card{padding:28px}}

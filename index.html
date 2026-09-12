@@ -7,9 +7,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Restauratør" />
   <title>Restauratør · Concordia</title>
-  <link rel="manifest" href="manifest.webmanifest?v=2.3.2" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png?v=2.3.2" />
-  <link rel="stylesheet" href="style.css?v=2.3.2" />
+  <link rel="manifest" href="manifest.webmanifest?v=2.4.0" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png?v=2.4.0" />
+  <link rel="stylesheet" href="style.css?v=2.4.0" />
 </head>
 <body>
   <div id="loadingScreen" class="loading-screen" role="status" aria-live="polite">
@@ -42,6 +42,7 @@
       <button class="nav-btn" data-view="next"><span>🍽️</span><small>Næste</small></button>
       <button class="nav-btn" data-view="edit"><span>✎</span><small>Ret</small></button>
       <button class="nav-btn" data-view="archive"><span>◷</span><small>Arkiv</small></button>
+      <button class="nav-btn" data-view="message"><span>✉</span><small>Besked</small></button>
       <button class="nav-btn" data-view="about"><span>ⓘ</span><small>Om</small></button>
     </nav>
     </aside>
@@ -104,6 +105,34 @@
       </section>
     </main>
 
+
+    <main id="viewMessage" class="view">
+      <section class="page-card message-card">
+        <div class="section-title"><span></span><h2>Send besked til brødrene</h2></div>
+        <p class="help-text">Sender en push-notifikation til alle, der har slået notifikationer til i brødre-appen.</p>
+
+        <label class="field-label">Overskrift
+          <input id="pushTitle" type="text" maxlength="60" value="Besked fra Concordia" placeholder="F.eks. Husk tilmelding" />
+        </label>
+
+        <label class="field-label">Besked
+          <textarea id="pushMessage" rows="6" maxlength="300" placeholder="Skriv beskeden til brødrene..."></textarea>
+        </label>
+
+        <label class="checkline push-link-option"><input id="pushOpenApp" type="checkbox" checked /> Åbn brødre-appen, når notifikationen trykkes</label>
+
+        <div class="push-preview" id="pushPreview">
+          <small>Forhåndsvisning</small>
+          <strong id="pushPreviewTitle">Besked fra Concordia</strong>
+          <span id="pushPreviewMessage">Din besked vises her.</span>
+        </div>
+
+        <button id="sendPushBtn" class="btn primary wide-btn push-send-btn" type="button">Send notifikation</button>
+        <p id="pushSendStatus" class="save-status" aria-live="polite"></p>
+        <p class="push-warning">Beskeden sendes til alle aktive push-abonnenter. Kontrollér teksten før du sender.</p>
+      </section>
+    </main>
+
     <main id="viewAbout" class="view">
       <section class="page-card about-card">
         <div class="section-title"><span></span><h2>Om appen</h2></div>
@@ -116,7 +145,7 @@
 
         <div class="about-box">
           <h3>Sådan bruges den</h3>
-          <p><strong>Overblik</strong> viser kommende aftener og madtal. <strong>Næste</strong> viser køkkenlisten. <strong>Ret</strong> bruges til at ændre tilmeldinger og tilføje eksterne gæster. <strong>Arkiv</strong> viser tidligere aftener.</p>
+          <p><strong>Overblik</strong> viser kommende aftener og madtal. <strong>Næste</strong> viser køkkenlisten. <strong>Ret</strong> bruges til at ændre tilmeldinger og tilføje eksterne gæster. <strong>Arkiv</strong> viser tidligere aftener. <strong>Besked</strong> bruges til at sende push-notifikationer til brødrene.</p>
         </div>
 
         <div class="about-box">
@@ -130,7 +159,7 @@
         </div>
 
         <p class="about-note">Køkkenbeskeden kan kopieres og sendes videre, og overblikket kan printes direkte fra browseren.</p>
-        <p class="app-version">Version <span id="appVersion">2.3.2</span></p>
+        <p class="app-version">Version <span id="appVersion">2.4.0</span></p>
       </section>
     </main>
 
@@ -216,6 +245,6 @@
     </div>
   </dialog>
 
-  <script src="app.js?v=2.3.2"></script>
+  <script src="app.js?v=2.4.0"></script>
 </body>
 </html>

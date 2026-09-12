@@ -1,4 +1,4 @@
-const APP_VERSION = '2.3.2';
+const APP_VERSION = '2.4.0';
 const CONFIG = {
   GOOGLE_APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw5kZ4Yjgge_sKnxhSjjVLkb8cI-hG0E_qcScyxP7820a7lzfCr42HhZDp3lW2kmNsy/exec',
   LOAD_TIMEOUT_MS: 15000,
@@ -63,7 +63,14 @@ const els = {
   externalGuestCount: $('#externalGuestCount'),
   externalGuestNote: $('#externalGuestNote'),
   saveExternalGuestBtn: $('#saveExternalGuestBtn'),
-  externalGuestSaveStatus: $('#externalGuestSaveStatus')
+  externalGuestSaveStatus: $('#externalGuestSaveStatus'),
+  pushTitle: $('#pushTitle'),
+  pushMessage: $('#pushMessage'),
+  pushOpenApp: $('#pushOpenApp'),
+  pushPreviewTitle: $('#pushPreviewTitle'),
+  pushPreviewMessage: $('#pushPreviewMessage'),
+  sendPushBtn: $('#sendPushBtn'),
+  pushSendStatus: $('#pushSendStatus')
 };
 
 const storage = {
@@ -126,6 +133,10 @@ function bind(){
   els.closeExternalGuestDialog?.addEventListener('click', closeExternalGuestDialog);
   els.externalGuestDialog?.addEventListener('click', event => closeDialogOnBackdrop(event, els.externalGuestDialog));
   els.saveExternalGuestBtn?.addEventListener('click', saveExternalGuests);
+  els.pushTitle?.addEventListener('input', renderPushPreview);
+  els.pushMessage?.addEventListener('input', renderPushPreview);
+  els.sendPushBtn?.addEventListener('click', sendManualPush);
+  renderPushPreview();
 
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault();
@@ -709,6 +720,68 @@ async function postSignup(signup){
   const data = await res.json();
   if (!(data.ok || data.success)) throw new Error(data.error || 'Ukendt fejl');
   return data;
+}
+
+function renderPushPreview(){
+  if (!els.pushPreviewTitle || !els.pushPreviewMessage) return;
+  const title = els.pushTitle?.value.trim() || 'Besked fra Concordia';
+  const message = els.pushMessage?.value.trim() || 'Din besked vises her.';
+  els.pushPreviewTitle.textContent = title;
+  els.pushPreviewMessage.textContent = message;
+}
+
+async function sendManualPush(){
+  const title = els.pushTitle?.value.trim() || '';
+  const message = els.pushMessage?.value.trim() || '';
+
+  if (!title) {
+    els.pushSendStatus.textContent = 'Skriv en overskrift.';
+    els.pushTitle?.focus();
+    return;
+  }
+  if (message.length < 3) {
+    els.pushSendStatus.textContent = 'Skriv en besked.';
+    els.pushMessage?.focus();
+    return;
+  }
+
+  const confirmed = window.confirm(`Send denne notifikation til alle brødre med push slået til?\n\n${title}\n${message}`);
+  if (!confirmed) return;
+
+  const payload = {
+    action: 'sendPush',
+    title,
+    message,
+    url: els.pushOpenApp?.checked ? 'https://concordia35.github.io/AktiviteterV2/' : '',
+    sentFrom: 'Restauratør-app',
+    sentAt: new Date().toISOString()
+  };
+
+  try {
+    els.sendPushBtn.disabled = true;
+    els.pushSendStatus.textContent = 'Sender notifikation…';
+    const res = await fetchWithTimeout(CONFIG.GOOGLE_APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    }, CONFIG.SAVE_TIMEOUT_MS);
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!(data.ok || data.success)) throw new Error(data.error || 'Ukendt fejl');
+
+    const recipients = Number.isFinite(Number(data.recipients)) ? ` · ${Number(data.recipients)} modtagere` : '';
+    els.pushSendStatus.textContent = `Notifikationen er sendt${recipients}.`;
+    showToast('Notifikation sendt.');
+    els.pushMessage.value = '';
+    renderPushPreview();
+  } catch (err) {
+    console.warn('Kunne ikke sende push-notifikation', err);
+    els.pushSendStatus.textContent = 'Kunne ikke sende. Apps Script skal have push-funktionen installeret.';
+    showToast('Notifikationen blev ikke sendt.');
+  } finally {
+    els.sendPushBtn.disabled = false;
+  }
 }
 
 function copyKitchenMessage(eventId){
