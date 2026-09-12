@@ -1,7 +1,7 @@
 const CACHE_PREFIX = 'concordia-restaurator-';
-const CACHE_NAME = `${CACHE_PREFIX}v2-3-0`;
+const CACHE_NAME = `${CACHE_PREFIX}v2-3-2`;
 const ASSETS = [
-  './', './index.html', './style.css?v=2.3.1', './app.js?v=2.3.1', './manifest.webmanifest?v=2.3.1',
+  './', './index.html', './style.css?v=2.3.2', './app.js?v=2.3.2', './manifest.webmanifest?v=2.3.2',
   './assets/chainlinks.jpg', './assets/chainlinks.svg', './icons/icon-192.png', './icons/icon-512.png'
 ];
 

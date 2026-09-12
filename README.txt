@@ -1,5 +1,5 @@
 Restauratør · Concordia
-Version 2.3.1
+Version 2.3.2
 
 Separat app til restauratøren/madansvarlig.
 
@@ -53,8 +53,9 @@ Version 2.3.0:
 - Eksterne gæster kan fjernes igen fra Ret-visningen.
 - Der kan tilføjes flere eksterne gæster på én gang med navn/beskrivelse og valgfri bemærkning.
 
-Version 2.3.1:
-- Understøtter flere medbragte gæster pr. broder.
-- Køkkentallene summerer det faktiske antal gæster og gæstekuverter.
-- Restauratøren kan rette antal medbragte gæster fra 0 til 10.
-- Gamle tilmeldinger med én gæst er fortsat kompatible.
+
+Version 2.3.2:
+- Bygger på den fungerende 2.3.0-forbindelse til Google Sheets.
+- Læser antal medbragte gæster fra brødre-appen uden at ændre køkken-appens eksisterende gemmeflow.
+- Summerer medbragte gæster og gæstekuverter korrekt.
+- PWA-cache versionsnummer er opdateret, så gamle 2.3.1-filer ikke hænger fast.

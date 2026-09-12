@@ -1,4 +1,4 @@
-const APP_VERSION = '2.3.1';
+const APP_VERSION = '2.3.2';
 const CONFIG = {
   GOOGLE_APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw5kZ4Yjgge_sKnxhSjjVLkb8cI-hG0E_qcScyxP7820a7lzfCr42HhZDp3lW2kmNsy/exec',
   LOAD_TIMEOUT_MS: 15000,
@@ -46,7 +46,7 @@ const els = {
   editName: $('#editName'),
   editCurrentStatus: $('#editCurrentStatus'),
   editMealBlock: $('#editMealBlock'),
-  editGuestCount: $('#editGuestCount'),
+  editGuest: $('#editGuest'),
   editGuestDetails: $('#editGuestDetails'),
   editGuestName: $('#editGuestName'),
   editGuestMeal: $('#editGuestMeal'),
@@ -120,7 +120,7 @@ function bind(){
 
   $$('[data-edit-attending]').forEach(btn => btn.addEventListener('click', () => chooseAttending(btn.dataset.editAttending)));
   $$('[data-edit-meal]').forEach(btn => btn.addEventListener('click', () => chooseMeal(btn.dataset.editMeal)));
-  els.editGuestCount?.addEventListener('change', syncEditControls);
+  els.editGuest?.addEventListener('change', syncEditControls);
   els.saveEdit?.addEventListener('click', saveEdit);
   els.addExternalGuestBtn?.addEventListener('click', openExternalGuestDialog);
   els.closeExternalGuestDialog?.addEventListener('click', closeExternalGuestDialog);
@@ -463,7 +463,6 @@ function openEditDialog(eventId, memberId){
     attending: signup?.attending || null,
     meal: signup?.meal || null,
     guest: signup?.guest === 'yes',
-    guestCount: signup?.guestCount || (signup?.guest === 'yes' ? 1 : 0),
     guestName: signup?.guestName || '',
     guestMeal: signup?.guestMeal === 'yes',
     note: signup?.note || ''
@@ -472,7 +471,7 @@ function openEditDialog(eventId, memberId){
   els.editEventLabel.textContent = `${cap(formatDate(event.date))} · ${event.title}`;
   els.editName.textContent = member.name;
   els.editCurrentStatus.textContent = signup ? `Nuværende: ${statusText(signup)}${signup.updatedAt ? ` · ${formatUpdated(signup.updatedAt)}` : ''}` : 'Nuværende: ikke svaret';
-  els.editGuestCount.value = String(state.currentEdit.guestCount || 0);
+  els.editGuest.checked = state.currentEdit.guest;
   els.editGuestName.value = state.currentEdit.guestName;
   els.editGuestMeal.checked = state.currentEdit.guestMeal;
   els.editNote.value = state.currentEdit.note;
@@ -493,10 +492,9 @@ function chooseAttending(value){
   if (value === 'no') {
     state.currentEdit.meal = 'no';
     state.currentEdit.guest = false;
-    state.currentEdit.guestCount = 0;
     state.currentEdit.guestName = '';
     state.currentEdit.guestMeal = false;
-    els.editGuestCount.value = '0';
+    els.editGuest.checked = false;
     els.editGuestName.value = '';
     els.editGuestMeal.checked = false;
   }
@@ -511,8 +509,7 @@ function chooseMeal(value){
 
 function syncEditControls(){
   if (!state.currentEdit) return;
-  state.currentEdit.guestCount = Math.max(0, Math.min(10, Number.parseInt(els.editGuestCount.value || '0', 10) || 0));
-  state.currentEdit.guest = state.currentEdit.guestCount > 0;
+  state.currentEdit.guest = els.editGuest.checked;
   if (!state.currentEdit.guest) {
     els.editGuestName.value = '';
     els.editGuestMeal.checked = false;
@@ -528,10 +525,10 @@ function syncEditControls(){
 
   const disabled = state.currentEdit.attending !== 'yes';
   els.editMealBlock.style.opacity = disabled ? '.55' : '1';
-  els.editGuestCount.disabled = disabled;
-  els.editGuestDetails.hidden = state.currentEdit.guestCount < 1 || disabled;
-  els.editGuestName.disabled = disabled || state.currentEdit.guestCount < 1;
-  els.editGuestMeal.disabled = disabled || state.currentEdit.guestCount < 1;
+  els.editGuest.disabled = disabled;
+  els.editGuestDetails.hidden = !els.editGuest.checked || disabled;
+  els.editGuestName.disabled = disabled || !els.editGuest.checked;
+  els.editGuestMeal.disabled = disabled || !els.editGuest.checked;
 }
 
 async function saveEdit(){
@@ -559,14 +556,10 @@ async function saveEdit(){
     deltager: edit.attending,
     meal: edit.attending === 'yes' ? edit.meal : 'no',
     mad: edit.attending === 'yes' ? edit.meal : 'no',
-    guest: edit.attending === 'yes' && Number.parseInt(els.editGuestCount.value || '0', 10) > 0 ? 'yes' : 'no',
-    guestCount: edit.attending === 'yes' ? Math.max(0, Math.min(10, Number.parseInt(els.editGuestCount.value || '0', 10) || 0)) : 0,
-    guestName: buildStoredGuestName(
-      edit.attending === 'yes' ? Math.max(0, Math.min(10, Number.parseInt(els.editGuestCount.value || '0', 10) || 0)) : 0,
-      els.editGuestName.value.trim()
-    ),
-    guestFood: edit.attending === 'yes' && Number.parseInt(els.editGuestCount.value || '0', 10) > 0 && els.editGuestMeal.checked ? 'yes' : 'no',
-    guestMeal: edit.attending === 'yes' && Number.parseInt(els.editGuestCount.value || '0', 10) > 0 && els.editGuestMeal.checked ? 'yes' : 'no',
+    guest: edit.attending === 'yes' && els.editGuest.checked ? 'yes' : 'no',
+    guestName: edit.attending === 'yes' && els.editGuest.checked ? els.editGuestName.value.trim() : '',
+    guestFood: edit.attending === 'yes' && els.editGuest.checked && els.editGuestMeal.checked ? 'yes' : 'no',
+    guestMeal: edit.attending === 'yes' && els.editGuest.checked && els.editGuestMeal.checked ? 'yes' : 'no',
     note: els.editNote.value.trim(),
     updatedAt: new Date().toISOString(),
     editedBy: 'Restauratør-app'
@@ -935,12 +928,6 @@ function normalizeEvent(e){
     allowGuests: isYes(e.allowGuests ?? e.gæsterTilladt ?? e.gaesterTilladt),
     deadline: normalizeDeadline(e.deadline || e.frist || e.tilmeldingsfrist || '', date)
   };
-}
-
-function buildStoredGuestName(count, names){
-  if (!count) return '';
-  const cleanNames = String(names || '').trim();
-  return `${count} ${count === 1 ? 'gæst' : 'gæster'}${cleanNames ? `: ${cleanNames}` : ''}`;
 }
 
 function parseGuestCount(rawCount, storedName, guestFlag){
