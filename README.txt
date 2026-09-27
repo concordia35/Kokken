@@ -67,3 +67,10 @@ Version 2.4.0:
 - Kan åbne brødre-appen, når modtageren trykker på notifikationen.
 - Push sendes via det eksisterende Google Apps Script, så OneSignal API-nøglen ikke ligger i PWA-koden.
 - Kræver at Apps Script udvides med sendPush-handling og ONESIGNAL_API_KEY i Script Properties.
+
+
+Version 2.4.1:
+- Fuldt køkkenoverblik viser nu også en navneliste under “Meldt fra”.
+- Push-fejl viser nu den konkrete fejl fra Apps Script i stedet for en generisk tekst.
+- PWA-cache er opdateret til 2.4.1.
+- Mappen AppsScript-push-patch indeholder serverdelen, der skal flettes ind i det eksisterende Apps Script for at aktivere manuel push.

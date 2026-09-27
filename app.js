@@ -1,4 +1,4 @@
-const APP_VERSION = '2.4.0';
+const APP_VERSION = '2.4.1';
 const CONFIG = {
   GOOGLE_APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw5kZ4Yjgge_sKnxhSjjVLkb8cI-hG0E_qcScyxP7820a7lzfCr42HhZDp3lW2kmNsy/exec',
   LOAD_TIMEOUT_MS: 15000,
@@ -392,6 +392,7 @@ function detailHtml(event, options={}){
       ${listBlock('Medbragte gæster til mad', groups.guestMeals, 'Ingen medbragte gæster til mad.', row => `${esc(row.name)} · ${row.guestCount || 1} ${(row.guestCount || 1) === 1 ? 'gæst' : 'gæster'}${row.guestName ? `: ${esc(row.guestName)}` : ''}`)}
       ${listBlock('Eksterne gæster', groups.externalMeals, 'Ingen eksterne gæster.', row => `${esc(externalGuestLabel(row))}${row.note ? ` · ${esc(row.note)}` : ''}`)}
       ${listBlock('Deltager uden mad', groups.attendingNoMeal, 'Ingen deltagere uden mad.', row => esc(row.name))}
+      ${listBlock('Meldt fra', groups.notAttending, 'Ingen har meldt fra.', row => esc(row.name))}
       ${listBlock('Noter', groups.notes, 'Ingen noter.', row => `<strong>${esc(row.name)}</strong><br><span>${esc(row.note)}</span>`)}
       ${listBlock('Mangler svar', groups.noReply, 'Alle har svaret.', member => esc(member.name))}
     </section>`;
@@ -777,7 +778,10 @@ async function sendManualPush(){
     renderPushPreview();
   } catch (err) {
     console.warn('Kunne ikke sende push-notifikation', err);
-    els.pushSendStatus.textContent = 'Kunne ikke sende. Apps Script skal have push-funktionen installeret.';
+    const detail = String(err?.message || '').trim();
+    els.pushSendStatus.textContent = detail
+      ? `Kunne ikke sende: ${detail}`
+      : 'Kunne ikke sende. Push-funktionen mangler eller fejlede i Apps Script.';
     showToast('Notifikationen blev ikke sendt.');
   } finally {
     els.sendPushBtn.disabled = false;
