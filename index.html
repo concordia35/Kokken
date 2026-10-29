@@ -109,27 +109,10 @@
     <main id="viewMessage" class="view">
       <section class="page-card message-card">
         <div class="section-title"><span></span><h2>Send besked til brødrene</h2></div>
-        <p class="help-text">Manuel beskedafsendelse foregår nu via den private Concordia Monitor, som kræver administratorlogin.</p>
-
-        <label class="field-label">Overskrift
-          <input id="pushTitle" type="text" maxlength="60" value="Besked fra Concordia" placeholder="F.eks. Husk tilmelding" />
-        </label>
-
-        <label class="field-label">Besked
-          <textarea id="pushMessage" rows="6" maxlength="300" placeholder="Skriv beskeden til brødrene..."></textarea>
-        </label>
-
-        <label class="checkline push-link-option"><input id="pushOpenApp" type="checkbox" checked /> Åbn brødre-appen, når notifikationen trykkes</label>
-
-        <div class="push-preview" id="pushPreview">
-          <small>Forhåndsvisning</small>
-          <strong id="pushPreviewTitle">Besked fra Concordia</strong>
-          <span id="pushPreviewMessage">Din besked vises her.</span>
-        </div>
-
+        <p class="help-text">Manuel afsendelse er flyttet til Concordia Monitor. Der skal logges ind som administrator, og beskeden bliver sendt direkte via OneSignal – ikke via den gamle Apps Script-kommando.</p>
         <button id="sendPushBtn" class="btn primary wide-btn push-send-btn" type="button">Åbn sikker beskedafsendelse</button>
         <p id="pushSendStatus" class="save-status" aria-live="polite"></p>
-        <p class="push-warning">Beskeden sendes til alle aktive push-abonnenter. Kontrollér teksten før du sender.</p>
+        <p class="push-warning">De automatiske påmindelser om tilmeldingsfristen fortsætter som hidtil.</p>
       </section>
     </main>
 
