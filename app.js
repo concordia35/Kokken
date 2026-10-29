@@ -1,4 +1,4 @@
-const APP_VERSION = '2.4.1';
+const APP_VERSION = '2.4.2';
 const CONFIG = {
   GOOGLE_APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw5kZ4Yjgge_sKnxhSjjVLkb8cI-hG0E_qcScyxP7820a7lzfCr42HhZDp3lW2kmNsy/exec',
   LOAD_TIMEOUT_MS: 15000,
@@ -732,60 +732,12 @@ function renderPushPreview(){
 }
 
 async function sendManualPush(){
-  const title = els.pushTitle?.value.trim() || '';
-  const message = els.pushMessage?.value.trim() || '';
-
-  if (!title) {
-    els.pushSendStatus.textContent = 'Skriv en overskrift.';
-    els.pushTitle?.focus();
-    return;
-  }
-  if (message.length < 3) {
-    els.pushSendStatus.textContent = 'Skriv en besked.';
-    els.pushMessage?.focus();
-    return;
-  }
-
-  const confirmed = window.confirm(`Send denne notifikation til alle brødre med push slået til?\n\n${title}\n${message}`);
-  if (!confirmed) return;
-
-  const payload = {
-    action: 'sendPush',
-    title,
-    message,
-    url: els.pushOpenApp?.checked ? 'https://concordia35.github.io/AktiviteterV2/' : '',
-    sentFrom: 'Restauratør-app',
-    sentAt: new Date().toISOString()
-  };
-
-  try {
-    els.sendPushBtn.disabled = true;
-    els.pushSendStatus.textContent = 'Sender notifikation…';
-    const res = await fetchWithTimeout(CONFIG.GOOGLE_APPS_SCRIPT_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify(payload)
-    }, CONFIG.SAVE_TIMEOUT_MS);
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    if (!(data.ok || data.success)) throw new Error(data.error || 'Ukendt fejl');
-
-    const recipients = Number.isFinite(Number(data.recipients)) ? ` · ${Number(data.recipients)} modtagere` : '';
-    els.pushSendStatus.textContent = `Notifikationen er sendt${recipients}.`;
-    showToast('Notifikation sendt.');
-    els.pushMessage.value = '';
-    renderPushPreview();
-  } catch (err) {
-    console.warn('Kunne ikke sende push-notifikation', err);
-    const detail = String(err?.message || '').trim();
-    els.pushSendStatus.textContent = detail
-      ? `Kunne ikke sende: ${detail}`
-      : 'Kunne ikke sende. Push-funktionen mangler eller fejlede i Apps Script.';
-    showToast('Notifikationen blev ikke sendt.');
-  } finally {
-    els.sendPushBtn.disabled = false;
-  }
+  // Afsendelse via Apps Script action=sendPush er ikke pålidelig.
+  // Sikker manuel push sker udelukkende via Cloudflare Access og OneSignal.
+  const confirmed = window.confirm('Manuel push er flyttet til den private Concordia Monitor. Åbn beskedfunktionen dér?');
+  if(!confirmed)return;
+  els.pushSendStatus.textContent = 'Åbner sikker beskedafsendelse i Concordia Monitor. Skriv beskeden derinde.';
+  window.open('https://concordia-monitor.oddfellow-concordia35.workers.dev/?view=push','_blank','noopener,noreferrer');
 }
 
 function copyKitchenMessage(eventId){
