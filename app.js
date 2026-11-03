@@ -1,4 +1,4 @@
-const APP_VERSION = '2.4.2';
+const APP_VERSION = '2.4.3';
 const CONFIG = {
   GOOGLE_APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw5kZ4Yjgge_sKnxhSjjVLkb8cI-hG0E_qcScyxP7820a7lzfCr42HhZDp3lW2kmNsy/exec',
   LOAD_TIMEOUT_MS: 15000,
@@ -732,12 +732,54 @@ function renderPushPreview(){
 }
 
 async function sendManualPush(){
-  // Afsendelse via Apps Script action=sendPush er ikke pålidelig.
-  // Sikker manuel push sker udelukkende via Cloudflare Access og OneSignal.
-  const confirmed = window.confirm('Manuel push er flyttet til den private Concordia Monitor. Åbn beskedfunktionen dér?');
-  if(!confirmed)return;
-  els.pushSendStatus.textContent = 'Åbner sikker beskedafsendelse i Concordia Monitor. Skriv beskeden derinde.';
-  window.open('https://concordia-monitor.oddfellow-concordia35.workers.dev/?view=push','_blank','noopener,noreferrer');
+  if (els.sendPushBtn.disabled) return;
+  const title = els.pushTitle.value.trim();
+  const message = els.pushMessage.value.trim();
+  const status = text => { els.pushSendStatus.textContent = text; };
+  if (!title || title.length > 60 || message.length < 3 || message.length > 300) {
+    status('Skriv en overskrift på højst 60 tegn og en besked på 3–300 tegn.');
+    return;
+  }
+  if (!window.confirm('Send denne besked til alle brødre med aktive notifikationer?\n\n' + title + '\n' + message)) return;
+  els.sendPushBtn.disabled = true;
+  els.pushTitle.disabled = els.pushMessage.disabled = els.pushOpenApp.disabled = true;
+  status('Sender beskeden…');
+  let outcomeKnown = false;
+  try {
+    const res = await fetchWithTimeout(CONFIG.GOOGLE_APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      redirect: 'follow',
+      body: JSON.stringify({
+        action: 'sendPush', title, message,
+        url: els.pushOpenApp.checked ? 'https://concordia35.github.io/AktiviteterV2/' : ''
+      })
+    }, 45000);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if (data.ok === false || data.success === false) {
+      outcomeKnown = true;
+      status('Beskeden blev afvist: ' + (data.error || 'Ukendt fejl fra Apps Script.') +
+        (data.details ? ' ' + String(data.details) : ''));
+      return;
+    }
+    if (data.ok !== true || typeof data.id !== 'string' || !data.id) {
+      throw new Error('Svaret mangler et besked-ID. Kontrollér, at den nye Apps Script-version er udgivet.');
+    }
+    outcomeKnown = true;
+    status('Beskeden er accepteret af OneSignal. Det garanterer ikke visning på alle enheder.');
+    els.pushMessage.value = '';
+    renderPushPreview();
+    showToast('Beskeden er sendt til OneSignal.');
+  } catch (err) {
+    status('Afsendelsen kunne ikke bekræftes. Beskeden kan være sendt. Kontrollér OneSignal, før du prøver igen. ' +
+      (err?.name === 'AbortError' ? 'Serveren svarede ikke i tide.' : String(err?.message || err)));
+  } finally {
+    els.pushTitle.disabled = els.pushMessage.disabled = els.pushOpenApp.disabled = false;
+    // Unknown outcomes stay blocked to avoid accidental duplicate broadcasts.
+    els.sendPushBtn.disabled = !outcomeKnown;
+    if (!outcomeKnown) status(els.pushSendStatus.textContent + ' Genåbn appen efter kontrollen for at sende igen.');
+  }
 }
 
 function copyKitchenMessage(eventId){

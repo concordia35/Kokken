@@ -7,9 +7,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Restauratør" />
   <title>Restauratør · Concordia</title>
-  <link rel="manifest" href="manifest.webmanifest?v=2.4.2" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png?v=2.4.2" />
-  <link rel="stylesheet" href="style.css?v=2.4.2" />
+  <link rel="manifest" href="manifest.webmanifest?v=2.4.3" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png?v=2.4.3" />
+  <link rel="stylesheet" href="style.css?v=2.4.3" />
 </head>
 <body>
   <div id="loadingScreen" class="loading-screen" role="status" aria-live="polite">
@@ -109,8 +109,20 @@
     <main id="viewMessage" class="view">
       <section class="page-card message-card">
         <div class="section-title"><span></span><h2>Send besked til brødrene</h2></div>
-        <p class="help-text">Manuel afsendelse er flyttet til Concordia Monitor. Der skal logges ind som administrator, og beskeden bliver sendt direkte via OneSignal – ikke via den gamle Apps Script-kommando.</p>
-        <button id="sendPushBtn" class="btn primary wide-btn push-send-btn" type="button">Åbn sikker beskedafsendelse</button>
+        <p class="help-text">Send en push-notifikation til brødre, som har slået notifikationer til.</p>
+        <label class="field-label">Overskrift
+          <input id="pushTitle" type="text" maxlength="60" value="Besked fra Concordia" />
+        </label>
+        <label class="field-label">Besked
+          <textarea id="pushMessage" rows="5" minlength="3" maxlength="300" placeholder="Skriv beskeden til brødrene…"></textarea>
+        </label>
+        <label class="checkline"><input id="pushOpenApp" type="checkbox" checked /> Åbn brødre-appen ved tryk på beskeden</label>
+        <div class="about-box push-preview">
+          <h3>Forhåndsvisning</h3>
+          <strong id="pushPreviewTitle"></strong>
+          <p id="pushPreviewMessage" style="white-space:pre-wrap;overflow-wrap:anywhere"></p>
+        </div>
+        <button id="sendPushBtn" class="btn primary wide-btn push-send-btn" type="button">Send besked til brødrene</button>
         <p id="pushSendStatus" class="save-status" aria-live="polite"></p>
         <p class="push-warning">De automatiske påmindelser om tilmeldingsfristen fortsætter som hidtil.</p>
       </section>
@@ -142,7 +154,7 @@
         </div>
 
         <p class="about-note">Køkkenbeskeden kan kopieres og sendes videre, og overblikket kan printes direkte fra browseren.</p>
-        <p class="app-version">Version <span id="appVersion">2.4.2</span></p>
+        <p class="app-version">Version <span id="appVersion">2.4.3</span></p>
       </section>
     </main>
 
@@ -228,6 +240,6 @@
     </div>
   </dialog>
 
-  <script src="app.js?v=2.4.2"></script>
+  <script src="app.js?v=2.4.3"></script>
 </body>
 </html>
