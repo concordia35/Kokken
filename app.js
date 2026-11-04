@@ -1,4 +1,4 @@
-const APP_VERSION = '2.4.3';
+const APP_VERSION = '2.5.0';
 const CONFIG = {
   GOOGLE_APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw5kZ4Yjgge_sKnxhSjjVLkb8cI-hG0E_qcScyxP7820a7lzfCr42HhZDp3lW2kmNsy/exec',
   LOAD_TIMEOUT_MS: 15000,
@@ -47,6 +47,7 @@ const els = {
   editCurrentStatus: $('#editCurrentStatus'),
   editMealBlock: $('#editMealBlock'),
   editGuest: $('#editGuest'),
+  editGuestCount: $('#editGuestCount'),
   editGuestDetails: $('#editGuestDetails'),
   editGuestName: $('#editGuestName'),
   editGuestMeal: $('#editGuestMeal'),
@@ -475,6 +476,7 @@ function openEditDialog(eventId, memberId){
     attending: signup?.attending || null,
     meal: signup?.meal || null,
     guest: signup?.guest === 'yes',
+    guestCount: signup?.guestCount || 1,
     guestName: signup?.guestName || '',
     guestMeal: signup?.guestMeal === 'yes',
     note: signup?.note || ''
@@ -484,6 +486,7 @@ function openEditDialog(eventId, memberId){
   els.editName.textContent = member.name;
   els.editCurrentStatus.textContent = signup ? `Nuværende: ${statusText(signup)}${signup.updatedAt ? ` · ${formatUpdated(signup.updatedAt)}` : ''}` : 'Nuværende: ikke svaret';
   els.editGuest.checked = state.currentEdit.guest;
+  els.editGuestCount.value = String(state.currentEdit.guestCount);
   els.editGuestName.value = state.currentEdit.guestName;
   els.editGuestMeal.checked = state.currentEdit.guestMeal;
   els.editNote.value = state.currentEdit.note;
@@ -538,6 +541,7 @@ function syncEditControls(){
   const disabled = state.currentEdit.attending !== 'yes';
   els.editMealBlock.style.opacity = disabled ? '.55' : '1';
   els.editGuest.disabled = disabled;
+  els.editGuestCount.disabled = disabled || !els.editGuest.checked;
   els.editGuestDetails.hidden = !els.editGuest.checked || disabled;
   els.editGuestName.disabled = disabled || !els.editGuest.checked;
   els.editGuestMeal.disabled = disabled || !els.editGuest.checked;
@@ -569,7 +573,8 @@ async function saveEdit(){
     meal: edit.attending === 'yes' ? edit.meal : 'no',
     mad: edit.attending === 'yes' ? edit.meal : 'no',
     guest: edit.attending === 'yes' && els.editGuest.checked ? 'yes' : 'no',
-    guestName: edit.attending === 'yes' && els.editGuest.checked ? els.editGuestName.value.trim() : '',
+    guestCount: edit.attending === 'yes' && els.editGuest.checked ? Math.max(1, Math.min(10, parseInt(els.editGuestCount.value,10) || 1)) : 0,
+    guestName: edit.attending === 'yes' && els.editGuest.checked ? `${Math.max(1, Math.min(10, parseInt(els.editGuestCount.value,10) || 1))} gæster${els.editGuestName.value.trim() ? ': '+els.editGuestName.value.trim() : ''}` : '',
     guestFood: edit.attending === 'yes' && els.editGuest.checked && els.editGuestMeal.checked ? 'yes' : 'no',
     guestMeal: edit.attending === 'yes' && els.editGuest.checked && els.editGuestMeal.checked ? 'yes' : 'no',
     note: els.editNote.value.trim(),
@@ -731,6 +736,17 @@ function renderPushPreview(){
   els.pushPreviewMessage.textContent = message;
 }
 
+let pendingPushMemory=null;
+function pushRequestId(title,message,openApp){
+ const content=JSON.stringify([title,message,openApp]);
+ let pending=pendingPushMemory;try{pending=JSON.parse(sessionStorage.getItem('concordia-pending-push')||'null')||pending}catch{}
+ if(!pending||pending.content!==content)pending={content,id:crypto.randomUUID()};
+ pendingPushMemory=pending;
+ try{sessionStorage.setItem('concordia-pending-push',JSON.stringify(pending))}catch{}
+ return pending.id;
+}
+function clearPushRequest(){pendingPushMemory=null;try{sessionStorage.removeItem('concordia-pending-push')}catch{}}
+
 async function sendManualPush(){
   if (els.sendPushBtn.disabled) return;
   const title = els.pushTitle.value.trim();
@@ -741,6 +757,13 @@ async function sendManualPush(){
     return;
   }
   if (!window.confirm('Send denne besked til alle brødre med aktive notifikationer?\n\n' + title + '\n' + message)) return;
+  const requestId=pushRequestId(title,message,els.pushOpenApp.checked);
+  let pin='';
+  try {
+    const statusResponse=await fetchWithTimeout(CONFIG.GOOGLE_APPS_SCRIPT_URL+'?action=pushStatus',{cache:'no-store'},15000);
+    const readiness=await statusResponse.json();
+    if(readiness.securityRequired){pin=window.prompt('Indtast beskedkoden til restauratøren:')||'';if(!pin)return;}
+  } catch {status('Kunne ikke kontrollere beskedforbindelsen. Prøv igen.');return;}
   els.sendPushBtn.disabled = true;
   els.pushTitle.disabled = els.pushMessage.disabled = els.pushOpenApp.disabled = true;
   status('Sender beskeden…');
@@ -751,7 +774,7 @@ async function sendManualPush(){
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       redirect: 'follow',
       body: JSON.stringify({
-        action: 'sendPush', title, message,
+        action: 'sendPush', title, message, requestId, pin,
         url: els.pushOpenApp.checked ? 'https://concordia35.github.io/AktiviteterV2/' : ''
       })
     }, 45000);
@@ -767,6 +790,7 @@ async function sendManualPush(){
       throw new Error('Svaret mangler et besked-ID. Kontrollér, at den nye Apps Script-version er udgivet.');
     }
     outcomeKnown = true;
+    clearPushRequest();
     status('Beskeden er accepteret af OneSignal. Det garanterer ikke visning på alle enheder.');
     els.pushMessage.value = '';
     renderPushPreview();
@@ -777,8 +801,8 @@ async function sendManualPush(){
   } finally {
     els.pushTitle.disabled = els.pushMessage.disabled = els.pushOpenApp.disabled = false;
     // Unknown outcomes stay blocked to avoid accidental duplicate broadcasts.
-    els.sendPushBtn.disabled = !outcomeKnown;
-    if (!outcomeKnown) status(els.pushSendStatus.textContent + ' Genåbn appen efter kontrollen for at sende igen.');
+    els.sendPushBtn.disabled = false;
+    if (!outcomeKnown) status(els.pushSendStatus.textContent + ' Prøv samme besked igen; besked-ID’et er bevaret.');
   }
 }
 
@@ -1219,3 +1243,4 @@ function day(date){ return new Date(`${normalizeDate(date)}T12:00:00`).getDate()
 function month(date){ return shortMonthFmt.format(new Date(`${normalizeDate(date)}T12:00:00`)).replace('.', ''); }
 function displayTime(time){ return String(time || '').replace(':','.'); }
 function formatUpdated(value){ const d = new Date(value); return isNaN(d) ? '' : `rettet ${shortDateFmt.format(d)} kl. ${timeFmt.format(d)}`; }
+
