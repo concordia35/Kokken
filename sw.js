@@ -1,7 +1,7 @@
 const CACHE_PREFIX = 'concordia-restaurator-';
-const CACHE_NAME = `${CACHE_PREFIX}v2-4-3`;
+const CACHE_NAME = `${CACHE_PREFIX}v2-5-0`;
 const ASSETS = [
-  './', './index.html', './style.css?v=2.4.3', './app.js?v=2.4.3', './manifest.webmanifest?v=2.4.3',
+  './', './index.html', './style.css?v=2.5.0', './app.js?v=2.5.0', './manifest.webmanifest?v=2.5.0',
   './assets/chainlinks.jpg', './assets/chainlinks.svg', './icons/icon-192.png', './icons/icon-512.png'
 ];
 
@@ -48,3 +48,4 @@ self.addEventListener('fetch', event => {
     }))
   );
 });
+
