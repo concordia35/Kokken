@@ -1,4 +1,4 @@
-const APP_VERSION = '2.5.0';
+const APP_VERSION = '2.5.1';
 const CONFIG = {
   GOOGLE_APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbw5kZ4Yjgge_sKnxhSjjVLkb8cI-hG0E_qcScyxP7820a7lzfCr42HhZDp3lW2kmNsy/exec',
   LOAD_TIMEOUT_MS: 15000,
@@ -573,8 +573,8 @@ async function saveEdit(){
     meal: edit.attending === 'yes' ? edit.meal : 'no',
     mad: edit.attending === 'yes' ? edit.meal : 'no',
     guest: edit.attending === 'yes' && els.editGuest.checked ? 'yes' : 'no',
-    guestCount: edit.attending === 'yes' && els.editGuest.checked ? Math.max(1, Math.min(10, parseInt(els.editGuestCount.value,10) || 1)) : 0,
-    guestName: edit.attending === 'yes' && els.editGuest.checked ? `${Math.max(1, Math.min(10, parseInt(els.editGuestCount.value,10) || 1))} gæster${els.editGuestName.value.trim() ? ': '+els.editGuestName.value.trim() : ''}` : '',
+    guestCount: edit.attending === 'yes' && els.editGuest.checked ? Math.max(1, Math.min(30, parseInt(els.editGuestCount.value,10) || 1)) : 0,
+    guestName: edit.attending === 'yes' && els.editGuest.checked ? `${Math.max(1, Math.min(30, parseInt(els.editGuestCount.value,10) || 1))} gæster${els.editGuestName.value.trim() ? ': '+els.editGuestName.value.trim() : ''}` : '',
     guestFood: edit.attending === 'yes' && els.editGuest.checked && els.editGuestMeal.checked ? 'yes' : 'no',
     guestMeal: edit.attending === 'yes' && els.editGuest.checked && els.editGuestMeal.checked ? 'yes' : 'no',
     note: els.editNote.value.trim(),
@@ -1027,9 +1027,9 @@ function normalizeEvent(e){
 
 function parseGuestCount(rawCount, storedName, guestFlag){
   const direct = Number.parseInt(rawCount, 10);
-  if (Number.isFinite(direct) && direct >= 0) return Math.min(10, direct);
+  if (Number.isFinite(direct) && direct >= 0) return Math.min(30, direct);
   const match = String(storedName || '').trim().match(/^(\d{1,2})\s+gæst(?:er)?(?:\s*:|$)/i);
-  if (match) return Math.min(10, Number.parseInt(match[1], 10) || 0);
+  if (match) return Math.min(30, Number.parseInt(match[1], 10) || 0);
   return guestFlag === 'yes' ? 1 : 0;
 }
 
